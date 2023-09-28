@@ -4,8 +4,7 @@ from datetime import datetime
 import hvplot.pandas
 import math
 import numpy as np
-# load data
-
+from settings import HANDLE_FEE
 
 def get_processing_result_of_stocks_df(stock_df, profile_df):
 
@@ -27,8 +26,8 @@ def get_processing_result_of_stocks_df(stock_df, profile_df):
     stock_df = stock_df.merge(profile_df[['weight', 'date', 'ticker']], on=[
                               'ticker', 'date'], how='outer')
     stock_df.rename(columns={'weight': 'initial_weight'}, inplace=True)
-    # create if not in stock_df
 
+    # create if not in stock_df
     stock_df['current_weight'] = float('nan')
     stock_df['previous_weight'] = float('nan')
     df_grouped = stock_df.groupby('ticker')
@@ -375,10 +374,15 @@ def create_analytic_df(price_df, profile_df):
     if ('shares' in df.columns):
         df['shares'] = grouped['shares'].fillna(method='ffill')
 
+        # calcualte handling fee
+        df['handling_fee'] = grouped['shares'].diff()
+        df['handling_fee'] = df['handling_fee'].apply(lambda x: 0 if x > 0 else x)
+        df['handling_fee'] = df['handling_fee'] * HANDLE_FEE * df['close']
+
     # fill rest_cap for portfolio
     if ('rest_cap' in df.columns):
         df['rest_cap'] = grouped['rest_cap'].fillna(method='ffill')
-        
+
     # remove profile and price entry before first profile entry from df
     df.dropna(subset=['ini_w'], inplace=True)
     df.dropna(subset=['close'], inplace=True)
@@ -477,7 +481,7 @@ def calculate_pnl(df):
     df.sort_values(by=['time'], inplace=True)
     grouped = df.groupby('ticker')
     prev_cash = grouped.cash.shift(1)
-    df['pnl'] = prev_cash * df['pct']
+    df['pnl'] = prev_cash * df['pct'] + df['handling_fee']
 
 
 def calculate_pct(df):
