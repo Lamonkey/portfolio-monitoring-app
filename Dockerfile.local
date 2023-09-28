@@ -22,7 +22,7 @@ WORKDIR /code/src
 
 
 # Start the panel app
-CMD ["panel", "serve", "editingPage.py", "indexPage.py","--basic-auth", "/code/instance/credential.json", "--cookie-secret=${SECRET_COOKIE}", "--setup","backgroundTask.py", "--address", "0.0.0.0", "--port", "7860", "--allow-websocket-origin", "*"]
+CMD ["panel", "serve", "editingPage.py", "indexPage.py","--basic-auth", "/code/instance/credential.json", "--cookie-secret=${SECRET_COOKIE}", "--setup","backgroundTask.py", "--address", "0.0.0.0", "--port", "7860", "--allow-websocket-origin", "*", '--admin']
 
 # permission required by huggingface
 RUN mkdir /.cache

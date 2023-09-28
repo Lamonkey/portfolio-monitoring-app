@@ -374,9 +374,16 @@ def create_analytic_df(price_df, profile_df):
     # assign missing shares, benchmark doesn't have shares
     if ('shares' in df.columns):
         df['shares'] = grouped['shares'].fillna(method='ffill')
+
+    # fill rest_cap for portfolio
+    if ('rest_cap' in df.columns):
+        df['rest_cap'] = grouped['rest_cap'].fillna(method='ffill')
+        
     # remove profile and price entry before first profile entry from df
     df.dropna(subset=['ini_w'], inplace=True)
     df.dropna(subset=['close'], inplace=True)
+
+
     # remove where weight is 0
     df = df[df['ini_w'] != 0].copy()
     return df
@@ -745,6 +752,8 @@ def agg_to_daily(df: pd.DataFrame):
         on_column['cash'] = 'sum'
     if 'pnl' in df.columns:
         on_column['pnl'] = 'sum'
+    if 'rest_cap' in df.columns:
+        on_column['rest_cap'] = 'first'
 
     agg_df = df.groupby('period').agg(on_column)
     return agg_df.reset_index()
@@ -798,26 +807,26 @@ def get_portfolio_anlaysis(analytic_p, analytic_b):
 
     used by the portfolio summary component
     '''
-
-    # # daily return(weighted pct)
-    # daily_return(analytic_p)
-    # daily_return(analytic_b)
-
     # aggregate to daily
     agg_p = agg_to_daily(analytic_p)
     agg_b = agg_to_daily(analytic_b)
 
-    # set smallest period return to 0
+    # first ts entry should have 0 as return
     agg_p.sort_values(by=['period'], inplace=True)
     agg_b.sort_values(by=['period'], inplace=True)
     agg_p.loc[0, 'return'] = 0
     agg_b.loc[0, 'return'] = 0
 
-    # set min period's pnl to 0
+    # first ts entry should have 0 pnl
     agg_p.loc[0, 'pnl'] = 0
 
-    # accumulative return
-    agg_p['cum_return'] = (agg_p['return'] + 1).cumprod() - 1
+    # calculate accumulative pnl
+    agg_p['cum_pnl'] = agg_p['pnl'].cumsum()
+
+    # portoflio accumulative pnl to calculate
+    agg_p['cum_return'] = agg_p['cum_pnl'] / (agg_p.loc[0, 'cash'] + agg_p.loc[0, 'rest_cap'])
+
+    # accumulative return 
     agg_b['cum_return'] = (agg_b['return'] + 1).cumprod() - 1
 
     # merge
