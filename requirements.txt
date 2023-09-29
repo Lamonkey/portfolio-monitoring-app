@@ -116,7 +116,7 @@ tenacity==8.2.2
 terminado==0.17.1
 thriftpy2==0.4.16
 tinycss2==1.2.1
-tornado==6.3.2
+tornado==6.3.3
 tqdm==4.65.0
 traitlets==5.9.0
 typing_extensions==4.6.3
