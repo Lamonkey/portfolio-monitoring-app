@@ -39,12 +39,23 @@ docker run -p 7860:7860 -e JQDATA_USER=USERNAME -e JQDATA_PASSWORD=PASSWORD -e S
 # Tech Stack 
 [panel](https://panel.holoviz.org/)
 
-# Deployment 
-## local machine
+# Development 
+```
+git pull https://github.com/Lamonkey/portfolio-monitoring-app.git
+cd portfolio-monitoring-app
+python -m venv venv
+source venvbin/activate
+pip install -r requirements.txt
+```
+Then create a .env file at the project root 
+```
+JQDATA_USER=USERNAME
+JQDATA_PASSWORD=PASSWORD
+```
+Then run the app
+```
+cd src
+panel indexPage.py editingPage.py --setup backgroundTask.py
 ```
 
-```
-## docker deployment
-```
-```
 
