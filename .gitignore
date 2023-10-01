@@ -235,3 +235,5 @@ instance/*
 
 ### personal local file
 notebooks/*
+
+src/notebooks

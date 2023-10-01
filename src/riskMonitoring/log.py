@@ -7,7 +7,7 @@ class Log():
 
     def __init__(self, path):
         current_path = os.path.dirname(os.path.abspath(__file__))
-        db_dir = os.path.join(current_path, "..", 'instance', 'log.json')
+        db_dir = os.path.join(current_path, "../..", 'instance', 'log.json')
         self.path = db_dir
         self.log = self._load_json_file(self.path)
 

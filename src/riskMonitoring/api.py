@@ -8,18 +8,14 @@ import jqdatasdk as jq
 import pandas as pd
 from typing import List, Optional
 from sqlalchemy import create_engine
-import table_schema as ts
+import riskMonitoring.table_schema as ts
 import os
-import utils as utils
 from tqdm import tqdm
+import riskMonitoring.db_operation as db
 
-current_path = os.path.dirname(os.path.abspath(__file__))
-db_dir = os.path.join(current_path, "..", 'instance', 'local.db')
-db_url = f'sqlite:///{db_dir}'
 load_dotenv()
 user_name = os.environ.get('JQDATA_USER')
 password = os.environ.get('JQDATA_PASSWORD')
-
 
 
 def auth_api(func):
@@ -36,9 +32,11 @@ def auth_api(func):
 
     return wrapper
 
+
 @auth_api
 def get_quota():
     return jq.get_query_count()
+
 
 def aggregate_sector(input: str) -> Optional[str]:
     '''
@@ -193,10 +191,9 @@ def update_portfolio_profile(stocks: List[dict], current_p: pd.DataFrame = None)
 
     # add display_name
     try:
-        with create_engine(db_url).connect() as conn:
-            info_df = pd.read_sql_table(ts.STOCKS_DETAILS_TABLE, conn)
-            profile_df = pd.merge(
-                profile_df, info_df[['display_name', 'ticker', 'name', 'aggregate_sector', ]], on='ticker', how='left')
+        info_df = db.get_all_stocks_infos()
+        profile_df = pd.merge(
+            profile_df, info_df[['display_name', 'ticker', 'name', 'aggregate_sector', ]], on='ticker', how='left')
     except Exception as e:
         error.append(f'create_portfolio \n{e}')
 
@@ -231,7 +228,6 @@ def get_all_stocks_detail():
 @auth_api
 def get_api_usage():
     return jq.get_query_count()
-
 
 
 @auth_api
@@ -275,11 +271,13 @@ def fetch_stocks_price(**params):
     stocks_df.rename(columns={'code': 'ticker'}, inplace=True)
     return stocks_df
 # jq.get_price(security='600673.XSHG', end_date=datetime.now(), frequency='1m', count=1)
+
+
 @auth_api
 def fetch_benchmark_profile(start_date: datetime, end_date: datetime, delta_time=timedelta(days=30), benchmark="000905.XSHG"):
     '''
     fetch benchmark profile from start_date to end_date with delta_time
-    
+
     Parameters
     ----------
     start_date : datetime
@@ -291,7 +289,7 @@ def fetch_benchmark_profile(start_date: datetime, end_date: datetime, delta_time
     '''
     if end_date < start_date:
         raise Exception('end_date must be greater than start_date')
-    
+
     results = []
     with tqdm(total=(end_date - start_date) / delta_time, colour='green', desc='Fetching benchmark') as pbar:
         while start_date < end_date:

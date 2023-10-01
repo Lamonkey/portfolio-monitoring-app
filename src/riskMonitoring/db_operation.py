@@ -2,12 +2,12 @@
 Abstraction for saving data to db
 '''
 import pandas as pd
-import table_schema as ts
+import riskMonitoring.table_schema as ts
 from sqlalchemy import create_engine
 import os
 
 current_path = os.path.dirname(os.path.abspath(__file__))
-db_dir = os.path.join(current_path, "..", 'instance', 'local.db')
+db_dir = os.path.join(current_path, "../..", 'instance', 'local.db')
 db_url = f'sqlite:///{db_dir}'
 
 def _validate_schema(df, schema):
@@ -38,9 +38,24 @@ def _validate_schema(df, schema):
     return True
 
 
+def get_most_recent_profile(type):
+    table_name = 'benchmark_profile' if type == 'benchmark' else 'portfolio_profile'
+    query = f"SELECT * FROM {table_name} WHERE date = (SELECT MAX(date) FROM {table_name})"
+    with create_engine(db_url).connect() as conn:
+        df = pd.read_sql(query, con=conn)
+        # convert date to datetime object
+        df['date'] = pd.to_datetime(df['date'])
+        return df
+
+
+
+        
+
+
 def get_all_benchmark_profile():
     '''return all entries in the benchmark profile table'''
     return _get_all_row(ts.BENCHMARK_TABLE)
+
 
 def append_to_benchmark_profile(df):
     '''append new entry to benchmark profile table'''
@@ -124,7 +139,7 @@ def append_to_stocks_price_table(df):
     '''append new entry to stocks price table'''
     _append_df_to_db(df, ts.STOCKS_PRICE_TABLE, ts.STOCKS_PRICE_TABLE_SCHEMA)
 
-def get_all_stocks():
+def get_all_stocks_infos():
     '''
     get all stocks information
 
@@ -136,6 +151,13 @@ def get_all_stocks():
     with create_engine(db_url).connect() as conn:
         all_stocks = pd.read_sql(ts.STOCKS_DETAILS_TABLE, con=conn)
         return all_stocks
+
+def replace_stock_detail_with(df):
+    if not _validate_schema(df, ts.STOCKS_DETAILS_TABLE_SCHEMA):
+        raise Exception(f'VALIDATION_ERROR: df does not have the same schema as the table {ts.STOCKS_DETAILS_TABLE}')
+    with create_engine(db_url).connect() as conn:
+        df.to_sql(ts.STOCKS_DETAILS_TABLE, con=conn, if_exists='replace', index=False)
+
 def save_portfolio_analytic_df(df):
     table_name = 'analytic_p'
     with create_engine(db_url).connect() as conn:
@@ -207,3 +229,26 @@ def get_stocks_price(tickers: list[str]):
         df.time = pd.to_datetime(df.time)
         # drop duplicates
         return df.drop_duplicates(subset=['ticker', 'time'])
+
+
+def upload_stock_price_to_db(df: pd.DataFrame):
+    with create_engine(db_url).connect() as conn:
+        df.to_sql(ts.STOCKS_PRICE_TABLE, con=conn, if_exists='append', index=False)
+
+
+def update_portfolio_profile_to_db(portfolio_df):
+    '''overwrite the portfolio profile table in db, and trigger a left fill on benchmark, stock price
+    and recomputation of analysis
+    '''
+
+    if (_validate_schema(portfolio_df, ts.PORTFOLIO_TABLE_SCHEMA)):
+        raise ValueError(
+            'uploaded portfolio_df has different schema than PORTFOLIO_DB_SCHEMA')
+    try:
+        with create_engine(db_url).connect() as conn:
+            portfolio_df[ts.PORTFOLIO_TABLE_SCHEMA.keys()].to_sql(
+                ts.PORTFOLIO_TABLE, con=conn, if_exists='replace', index=False)
+
+    except Exception as e:
+        print(e)
+        raise e

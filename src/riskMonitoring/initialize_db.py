@@ -1,10 +1,10 @@
 from sqlalchemy import create_engine
 import pandas as pd
-import table_schema as ts
+import riskMonitoring.table_schema as ts
 import os
 
 current_path = os.path.dirname(os.path.abspath(__file__))
-db_dir = os.path.join(current_path, "..", 'instance', 'local.db')
+db_dir = os.path.join(current_path, "../..", 'instance', 'local.db')
 db_url = f'sqlite:///{db_dir}'
 
 

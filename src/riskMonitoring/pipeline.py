@@ -1,22 +1,18 @@
 import datetime as dt
-from sqlalchemy import create_engine, text
 import pandas as pd
 from streamz import Stream
-import utils as utils
-import api
-import pytz
-import table_schema as ts
-import db_operation as db
-from log import Log
-import processing
+import riskMonitoring.utils as utils
+import riskMonitoring.api as api
+import riskMonitoring.db_operation as db
+from riskMonitoring.log import Log
+import riskMonitoring.processing as processing
 from tornado import gen
-import os
 from tqdm import tqdm
 # import settings
 # fetch new stock price
 stock_price_stream = Stream()
 event = Stream(asynchronous=True)
-# display notification to 
+# display notification to
 notification_queue = Stream()
 # log
 log = Log('instance/log.json')
@@ -28,20 +24,6 @@ log = Log('instance/log.json')
 # nest_asyncio.apply()
 # import settings
 
-# run using  --setup
-current_path = os.path.dirname(os.path.abspath(__file__))
-db_dir = os.path.join(current_path, "..", 'instance', 'local.db')
-db_url = f'sqlite:///{db_dir}'
-
-def get_most_recent_profile(type):
-    table_name = 'benchmark_profile' if type == 'benchmark' else 'portfolio_profile'
-    query = f"SELECT * FROM {table_name} WHERE date = (SELECT MAX(date) FROM {table_name})"
-    with create_engine(db_url).connect() as conn:
-        df = pd.read_sql(query, con=conn)
-        # convert date to datetime object
-        df['date'] = pd.to_datetime(df['date'])
-        return df
-
 
 def update_stocks_details_to_db():
     '''override stocks_details table with new stocks detail
@@ -52,97 +34,19 @@ def update_stocks_details_to_db():
        'sector', 'aggregate_sector'
     '''
     df = api.get_all_stocks_detail()
-    # validation
-    if not _validate_schema(df, ts.STOCKS_DETAILS_TABLE_SCHEMA):
-        raise ValueError(
-            'df has different schema than STOCKS_DETAILS_TABLE_SCHEMA')
-    with create_engine(db_url).connect() as conn:
-        df.to_sql(ts.STOCKS_DETAILS_TABLE, con=conn,
-                  if_exists='replace', index=False)
-
-
-def need_to_update_stocks_price(delta_time):
-    # convert p_portfolio.date[0] to timezone-aware datetime object
-    tz = pytz.timezone('Asia/Shanghai')
-    # get stock price df
-    with create_engine(db_url).connect() as conn:
-        # check if a table exist
-        if not conn.dialect.has_table(conn, 'stocks_price'):
-            return True
-        else:
-            query = "SELECT * FROM stocks_price WHERE time = (SELECT MAX(time) FROM stocks_price)"
-            most_recent_price = pd.read_sql(query, con=conn)
-            most_recent_price.time = pd.to_datetime(most_recent_price.time)
-            date_time = tz.localize(most_recent_price.time[0].to_pydatetime())
-            if utils.time_in_beijing() - date_time > delta_time:
-                return True
-            else:
-                return False
+    db.replace_stock_detail_with(df)
 
 
 def add_details_to_stock_df(stock_df):
-    with create_engine(db_url).connect() as conn:
-        detail_df = pd.read_sql(ts.STOCKS_DETAILS_TABLE, con=conn)
-        merged_df = pd.merge(stock_df, detail_df[
-            ['sector', 'name',
-             'aggregate_sector',
-             'display_name',
-             'ticker']
-        ], on='ticker', how='left')
-        merged_df['aggregate_sector'].fillna('其他', inplace=True)
-        return merged_df
-
-
-def _validate_schema(df, schema):
-    '''
-    validate df has the same columns and data types as schema
-
-    Parameters
-    ----------
-    df: pd.DataFrame
-    schema: dict
-        {column_name: data_type}
-
-    Returns
-    -------
-    bool
-        True if df has the same columns and data types as schema
-        False otherwise
-    '''
-
-    # check if the DataFrame has the same columns as the schema
-    if set(df.columns) != set(schema.keys()):
-        return False
-    # check if the data types of the columns match the schema
-    # TODO: ignoring type check for now
-    # for col, dtype in schema.items():
-    #     if df[col].dtype != dtype:
-    #         return False
-    return True
-
-
-def save_stock_price_to_db(df: pd.DataFrame):
-    print('saving to stock to db')
-    with create_engine(db_url).connect() as conn:
-        df.to_sql('stocks_price', con=conn, if_exists='append', index=False)
-
-
-def update_portfolio_profile_to_db(portfolio_df):
-    '''overwrite the portfolio profile table in db, and trigger a left fill on benchmark, stock price
-    and recomputation of analysis
-    '''
-
-    if (_validate_schema(portfolio_df, ts.PORTFOLIO_TABLE_SCHEMA)):
-        raise ValueError(
-            'uploaded portfolio_df has different schema than PORTFOLIO_DB_SCHEMA')
-    try:
-        with create_engine(db_url).connect() as conn:
-            portfolio_df[ts.PORTFOLIO_TABLE_SCHEMA.keys()].to_sql(
-                ts.PORTFOLIO_TABLE, con=conn, if_exists='replace', index=False)
-            
-    except Exception as e:
-        print(e)
-        raise e
+    detail_df = db.get_all_stocks_infos()
+    merged_df = pd.merge(stock_df, detail_df[
+        ['sector', 'name',
+            'aggregate_sector',
+            'display_name',
+            'ticker']
+    ], on='ticker', how='left')
+    merged_df['aggregate_sector'].fillna('其他', inplace=True)
+    return merged_df
 
 
 def right_fill_stock_price():
@@ -186,7 +90,7 @@ def _fetch_all_stocks_price_between(start, end):
     None
     '''
     # all trading stocks available between start day and end date
-    all_stocks = db.get_all_stocks()
+    all_stocks = db.get_all_stocks_infos()
     selected_stocks = all_stocks[(all_stocks.start_date <= end) & (
         all_stocks.end_date >= start)]
     tickers = selected_stocks.ticker.to_list()
@@ -247,7 +151,7 @@ def left_fill_benchmark_profile():
     # get starttime of portfolio profile
     p_starts = db.get_oldest_portfolio_profile().date
 
-    # update window range 
+    # update window range
     if len(p_starts) == 0:
         # if no portfolio profile, terminate
         return
@@ -262,7 +166,7 @@ def left_fill_benchmark_profile():
         # back fill benchmark profile
         new_entry = api.fetch_benchmark_profile(p_start, b_start)
         detailed_new_entry = utils.add_details_to_stock_df(new_entry)
-    
+
         # append to db
         db.append_to_benchmark_profile(detailed_new_entry)
         # return detailed_new_entry
@@ -300,7 +204,8 @@ def left_fill_stocks_price():
     with tqdm(total=(end - start) / delta_time, colour='green', desc='Fetching stock price') as pbar:
         while start < end:
             # fetch and update
-            new_entry = _fetch_all_stocks_price_between(start, start + delta_time)
+            new_entry = _fetch_all_stocks_price_between(
+                start, start + delta_time)
             db.append_to_stocks_price_table(new_entry)
             # skip previous end date since it is inclusive
             start = min(start + delta_time + dt.timedelta(days=1), end)
@@ -421,22 +326,6 @@ async def daily_update():
         print("no update needed")
     batch_processing()
     print("updated analytic")
-
-
-def update():
-    '''
-    run only once, update stock price and benchmark profile
-    '''
-    print("Checking stock_price table")
-    # collect daily stock price until today in beijing time
-    if need_to_update_stocks_price(dt.timedelta(days=1)):
-        print("Updating stock_price table")
-        # stock_df = update_stock_price()
-        stock_df = add_details_to_stock_df(stock_df)
-        save_stock_price_to_db(stock_df)
-        stock_price_stream.emit(stock_df)
-
-
 
 
 @gen.coroutine

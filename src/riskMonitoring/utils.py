@@ -2,13 +2,10 @@ import pytz
 import datetime
 import io
 import pandas as pd
-import table_schema as ts
+from riskMonitoring import db_operation as db
 from sqlalchemy import create_engine
 import os
 
-current_path = os.path.dirname(os.path.abspath(__file__))
-db_dir = os.path.join(current_path, "..", 'instance', 'local.db')
-db_url = f'sqlite:///{db_dir}'
 
 
 def clip_df(start, end, df: pd.DataFrame, on='time'):
@@ -43,21 +40,20 @@ def add_details_to_stock_df(stock_df):
         the dataframe with sector, aggregate sector, display_name and name added
 
     '''
-    with create_engine(db_url).connect() as conn:
-        # special handling for benchmark profile
-        if 'display_name' in stock_df.columns:
-            stock_df.drop(columns=['display_name'], inplace=True)
+    # special handling for benchmark profile
+    detail_df = db.get_all_stocks_infos()
+    if 'display_name' in stock_df.columns:
+        stock_df.drop(columns=['display_name'], inplace=True)
 
-        detail_df = pd.read_sql(ts.STOCKS_DETAILS_TABLE, con=conn)
-        merged_df = pd.merge(stock_df, detail_df[
-            ['sector', 'name',
-             'aggregate_sector',
-             'display_name',
-             'ticker']
-        ], on='ticker', how='left')
+    merged_df = pd.merge(stock_df, detail_df[
+        ['sector', 'name',
+            'aggregate_sector',
+            'display_name',
+            'ticker']
+    ], on='ticker', how='left')
 
-        merged_df['aggregate_sector'].fillna('其他', inplace=True)
-        return merged_df
+    merged_df['aggregate_sector'].fillna('其他', inplace=True)
+    return merged_df
 
 
 def convert_string_to_datetime(date_string, time_zone="Asia/Shanghai"):
