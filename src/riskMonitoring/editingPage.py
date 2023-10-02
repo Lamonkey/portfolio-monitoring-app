@@ -1,14 +1,13 @@
 
 
 import panel as pn
-from utils import create_stocks_entry_from_excel, style_number, create_share_changes_report
+from riskMonitoring.utils import create_stocks_entry_from_excel, style_number, create_share_changes_report, time_in_beijing 
 from bokeh.models.widgets.tables import NumberEditor, SelectEditor
-from utils import time_in_beijing
 import pandas as pd
-import api
-import db_operation as db
-import pipeline
-from sidebar import SideNavBar
+import riskMonitoring.api as api
+import riskMonitoring.db_operation as db
+import riskMonitoring.pipeline as pipeline
+from riskMonitoring.sidebar import SideNavBar
 
 
 pn.extension()
@@ -124,7 +123,7 @@ def app():
     p_profile['sync_to_db'] = True
 
     # get all stocks ticker for auto fill
-    stock_details = db.get_all_stocks()
+    stock_details = db.get_all_stocks_infos()
     all_tickers = stock_details.ticker.to_list()
 
     # get most recent portfolio for auto generate entry
@@ -376,7 +375,7 @@ def app():
         selected_portfolio = new_portfolio[new_portfolio['sync_to_db']]
 
         try:
-            pipeline.update_portfolio_profile_to_db(selected_portfolio)
+            db.update_portfolio_profile_to_db(selected_portfolio)
         except Exception as e:
             raise Exception(f'同步到数据库失败,错误信息:{e}')
         # update history tabulator and portfolio tabulator
