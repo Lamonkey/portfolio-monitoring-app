@@ -833,7 +833,7 @@ def get_portfolio_anlaysis(analytic_p, analytic_b):
     # calculate accumulative pnl
     agg_p['cum_pnl'] = agg_p['pnl'].cumsum()
 
-    # portoflio accumulative pnl to calculate
+    # using accumulative pnl to calculate
     agg_p['cum_return'] = agg_p['cum_pnl'] / (agg_p.loc[0, 'cash'] + agg_p.loc[0, 'rest_cap'])
 
     # accumulative return 
@@ -851,6 +851,5 @@ def get_portfolio_anlaysis(analytic_p, analytic_b):
     merged_df['tracking_error'] = (
         merged_df['return_p'] - merged_df['return_b']).expanding(min_periods=1).std()
 
-    # cum pnl
-    merged_df['cum_pnl'] = merged_df['pnl'].cumsum()
+
     return merged_df

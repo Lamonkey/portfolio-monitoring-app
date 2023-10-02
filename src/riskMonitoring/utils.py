@@ -12,6 +12,11 @@ def clip_df(start, end, df: pd.DataFrame, on='time'):
     '''
     return a copy of df between start and end date inclusive
     '''
+    # start of that day
+    start = start.replace(hour=0, minute=0, second=0, microsecond=0)
+    # end of that day
+    end = end.replace(hour=23, minute=59, second=59, microsecond=999999)
+    
     return df[df.time.between(start, end, inclusive='both')].copy()
 
 

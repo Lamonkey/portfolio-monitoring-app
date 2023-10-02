@@ -1,4 +1,4 @@
-import processing
+import riskMonitoring.processing as processing
 from datetime import datetime, timedelta, time
 import panel as pn
 import pandas as pd
@@ -8,10 +8,10 @@ import numpy as np
 import hvplot.pandas  # noqa
 from panel.viewable import Viewer
 import param
-import styling as styling
-import description
+import riskMonitoring.styling as styling
+import riskMonitoring.description as description
 import plotly.graph_objs as go
-import utils as utils
+import riskMonitoring.utils as utils
 
 # import warnings
 pn.extension('mathjax')
