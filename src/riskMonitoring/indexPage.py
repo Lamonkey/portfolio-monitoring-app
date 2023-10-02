@@ -1,10 +1,10 @@
 import panel as pn
-from sidebar import SideNavBar
-import indexPageComponents
-import processing
-import db_operation as db
-import api
-import utils as utils
+from riskMonitoring.sidebar import SideNavBar
+import riskMonitoring.indexPageComponents as indexPageComponents
+import riskMonitoring.processing as processing
+import riskMonitoring.db_operation as db
+import riskMonitoring.api as api
+import riskMonitoring.utils as utils
 import pandas as pd
 
 pn.extension('mathjax')
