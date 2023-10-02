@@ -352,8 +352,8 @@ def create_analytic_df(price_df, profile_df):
 
     '''
     # daily stock price use begin of the date, need to convert profile_df day to begin of the date
-    profile_df['time'] = profile_df['time'].map(
-        lambda x: datetime(x.year, x.month, x.day))
+    # profile_df['time'] = profile_df['time'].map(
+    #     lambda x: datetime(x.year, x.month, x.day))
 
     # make every time entry the same dimension
     uni_profile_df = _uniformize_time_series(profile_df)
@@ -361,6 +361,11 @@ def create_analytic_df(price_df, profile_df):
     # TODO handle rename column here
     df = price_df.merge(uni_profile_df, on=['ticker', 'time'], how='outer')
     df.sort_values(by=['ticker', 'time'], inplace=True)
+
+    # fill close price with ave_price in profile df if exist
+    if 'ave_price' in df.columns:
+       df.loc[df['ave_price'].notna(),'close'] = df[df['ave_price'].notna()]['ave_price']
+        
     # add sector, aggregate_sector, display_name and name to missing rows
     grouped = df.groupby('ticker')
     df['sector'] = grouped['sector'].fillna(method='ffill')
@@ -370,13 +375,15 @@ def create_analytic_df(price_df, profile_df):
 
     # assign missing ini_w
     df['ini_w'] = grouped['ini_w'].fillna(method='ffill')
+
     # assign missing shares, benchmark doesn't have shares
     if ('shares' in df.columns):
         df['shares'] = grouped['shares'].fillna(method='ffill')
 
         # calcualte handling fee
         df['handling_fee'] = grouped['shares'].diff()
-        df['handling_fee'] = df['handling_fee'].apply(lambda x: 0 if x > 0 else x)
+        # TODO: currently not needed so set to 0 for both cases
+        df['handling_fee'] = df['handling_fee'].apply(lambda x: 0 if x > 0 else 0)
         df['handling_fee'] = df['handling_fee'] * HANDLE_FEE * df['close']
 
     # fill rest_cap for portfolio
@@ -386,7 +393,6 @@ def create_analytic_df(price_df, profile_df):
     # remove profile and price entry before first profile entry from df
     df.dropna(subset=['ini_w'], inplace=True)
     df.dropna(subset=['close'], inplace=True)
-
 
     # remove where weight is 0
     df = df[df['ini_w'] != 0].copy()
