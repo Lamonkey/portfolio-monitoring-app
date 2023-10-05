@@ -1,7 +1,7 @@
 # Portfolio monitoring app
 
 A web application to monitor portfolio's performance
-`<img width="728" alt="image" src="https://github.com/Lamonkey/portfolio-monitoring-app/assets/10794555/794fa3f1-f1ce-4942-bf50-bef28915dad0">`
+<img width="728" alt="image" src="https://github.com/Lamonkey/portfolio-monitoring-app/assets/10794555/794fa3f1-f1ce-4942-bf50-bef28915dad0">
 
 # Try it yourself using docker
 
