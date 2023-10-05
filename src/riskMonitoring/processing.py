@@ -794,8 +794,9 @@ def get_draw_down(df):
     agg_df.sort_values(by=['period'], inplace=True)
 
     # calculate accumulative return and accumulative pnl
-    agg_df['cum_return'] = (agg_df['return']+1).cumprod() - 1
     agg_df['cum_pnl'] = agg_df['pnl'].cumsum()
+    agg_df['cum_return'] = agg_df['cum_pnl'] \
+        / (agg_df.loc[0, 'cash'] + agg_df.loc[0, 'rest_cap'])
 
     # accumulative pnl draw down
     agg_df['ex_max_cum_pnl'] = agg_df['cum_pnl'].expanding(min_periods=1).max()

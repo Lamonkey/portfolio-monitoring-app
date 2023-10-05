@@ -181,13 +181,13 @@ class Component(Viewer):
     def create_cum_pnl_plot(self, df):
         fig = px.line(df, x='x', y='cum_pnl')
         fig.update_layout(styling.plot_layout)
+        fig.update_traces(styling.line_plot_trace)
         return fig.to_dict()
 
     def create_return_ratio(self, df):
         df['cum_return_ratio'] = df['cum_return_p'] / df['cum_return_b']
         fig = px.line(df, x='x', y='cum_return_ratio')
-        fig.update_traces(mode="lines+markers",
-                          marker=dict(size=5), line=dict(width=2))
+        fig.update_traces(styling.line_plot_trace)
         fig.update_layout(styling.plot_layout)
         colname_to_name = {
             'cum_return_ratio': 'portfolio累计回报率/benchmark累计回报率'

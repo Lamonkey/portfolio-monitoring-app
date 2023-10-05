@@ -23,3 +23,9 @@ barplot_trace = dict(
 card_style = dict(
     flex='1 1 calc(100% / 3)',
 )
+
+line_plot_trace = dict(
+    mode='lines+markers',
+    marker=dict(size=5),
+    line=dict(width=2)
+)
