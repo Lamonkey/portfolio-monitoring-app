@@ -307,25 +307,19 @@ async def daily_update():
     cause update method of stock price depend on the benchmark profile
 
     '''
-    last_update = log.get_time('daily_update')
-    # less than today 9am, since it need to force to update at 9
-    if last_update is None or utils.time_in_beijing() - last_update >= dt.timedelta(days=1):
-        print("running daily update")
-
-        # update benchmark index, this need to be done before update stock price
-        left_fill_benchmark_profile()
-        right_fill_bechmark_profile()
-        print("updated benchmark profile")
-        # update stock price
-        left_fill_stocks_price()
-        right_fill_stock_price()
-        print("updated stocks price")
-        # update all stock detail
-        update_stocks_details_to_db()
-        print("updated stocks details")
-        log.update_log('daily_update')
-    else:
-        print("no update needed")
+    print("running daily update")
+    # update benchmark index, this need to be done before update stock price
+    left_fill_benchmark_profile()
+    right_fill_bechmark_profile()
+    print("updated benchmark profile")
+    # update stock price
+    left_fill_stocks_price()
+    right_fill_stock_price()
+    print("updated stocks price")
+    # update all stock detail
+    update_stocks_details_to_db()
+    print("updated stocks details")
+    log.update_log('daily_update')
     batch_processing()
     print("updated analytic")
 

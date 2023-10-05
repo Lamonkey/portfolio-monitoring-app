@@ -3,7 +3,7 @@ import os
 import sqlite3
 import panel as pn
 import json
-from datetime import timedelta
+from datetime import timedelta, datetime
 # sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__))))
 from riskMonitoring.pipeline import daily_update
 from riskMonitoring.initialize_db import initialize_db
@@ -22,6 +22,5 @@ if not os.path.exists(credential_path):
     with open(credential_path, 'w') as f:
         json.dump(dict(user='password'), f)
 
-pn.state.schedule_task(
-    'daily_update', daily_update, period=timedelta(hours=24)
-)
+# update everyday at market close 15:00
+pn.state.schedule_task('task', daily_update, cron='5 15 * * mon,tue,wed,thu,fri')
