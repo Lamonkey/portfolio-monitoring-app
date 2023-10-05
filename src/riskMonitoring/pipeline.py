@@ -220,8 +220,10 @@ def updaet_benchmark_to_db():
 
 
 def get_stocks_in_profile(profile_df):
+    start_date = profile_df.date.min()
     ticker_list = profile_df.ticker.unique().tolist()
     stocks_df = db.get_stocks_price(ticker_list)
+    stocks_df = utils.clip_df(start_date, stocks_df)
     return stocks_df
 
 

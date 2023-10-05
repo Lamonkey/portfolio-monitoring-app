@@ -48,7 +48,7 @@ class Component(Viewer):
         agg_df = df.groupby('time').agg(
             {'return': 'sum', 'rest_cap': 'first', 'pnl': 'sum', 'cash': 'sum'})
         agg_df.reset_index(inplace=True)
-        
+
         agg_df['rest_cap'] = agg_df['rest_cap'].fillna(method='ffill')
         # for index, _ in agg_df.iterrows():
         #     if index == 0:
@@ -64,7 +64,9 @@ class Component(Viewer):
         update the view of trend plot
         '''
         df = utils.clip_df(
-            self.date_range.value[0], self.date_range.value[1], self.daily_cap_df)
+            start=self.date_range.value[0],
+            end=self.date_range.value[1],
+            df=self.daily_cap_df)
         self.trend_plot.object = self.create_trend_plot(df)
 
     def create_trend_plot(self, df):
@@ -109,7 +111,7 @@ class Component(Viewer):
         fig.update_layout(styling.plot_layout)
         fig.update_layout(coloraxis_colorbar=dict(
             title="累计加权回报率"))
- 
+
         return fig.to_dict()
 
     def __panel__(self):

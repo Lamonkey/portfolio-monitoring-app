@@ -231,7 +231,7 @@ def get_api_usage():
 
 
 @auth_api
-def get_stocks_price(profile: pd.DataFrame, start_date: datetime, end_date: datetime, frequency='daily') -> tuple[pd.DataFrame, List[str]]:
+def fetch_stocks_price(profile: pd.DataFrame, start_date: datetime, end_date: datetime, frequency='daily') -> tuple[pd.DataFrame, List[str]]:
     """
     Return a dataframe contain stock price between period of time for price in a portfolio profile
 

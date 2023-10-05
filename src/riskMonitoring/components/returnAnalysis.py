@@ -7,6 +7,7 @@ import param
 import riskMonitoring.styling as styling
 import riskMonitoring.utils as utils
 
+
 class Component(Viewer):
     '''
     analysis on the return of the portfolio
@@ -139,9 +140,9 @@ class Component(Viewer):
             freq = 'W-MON'
 
         cliped_p = utils.clip_df(
-            self.range_slider.value[0], self.range_slider.value[1], self.calculated_p_stock)
+            start=self.range_slider.value[0], end=self.range_slider.value[1], df=self.calculated_p_stock)
         cliped_b = utils.clip_df(
-            self.range_slider.value[0], self.range_slider.value[1], self.calculated_b_stock)
+            start=self.range_slider.value[0], end=self.range_slider.value[1], df=self.calculated_b_stock)
 
         # update return plot
         return_barplot = self.create_return_barplot(

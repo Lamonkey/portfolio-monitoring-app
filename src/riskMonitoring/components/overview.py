@@ -250,8 +250,8 @@ class Component(Viewer):
     def update(self):
         start = self.date_range_slider.value[0]
         end = self.date_range_slider.value[1]
-        clip_p = utils.clip_df(start, end, self.p_stock_df)
-        clip_b = utils.clip_df(start, end, self.b_stock_df)
+        clip_p = utils.clip_df(start=start, end=end, df=self.p_stock_df)
+        clip_b = utils.clip_df(start=start, end=end, df=self.b_stock_df)
         df = processing.get_portfolio_anlaysis(
             analytic_b=clip_b, analytic_p=clip_p)
         df['x'] = df['period'].dt.start_time.dt.strftime('%Y-%m-%d')

@@ -76,9 +76,9 @@ class Component(Viewer):
         '''
         # clipe by start and end date
         cliped_p = utils.clip_df(
-            self.start_date, self.end_date, self.analytic_p)
+            start=self.start_date, end=self.end_date, df=self.analytic_p)
         cliped_b = utils.clip_df(
-            self.start_date, self.end_date, self.analytic_b)
+            start=self.start_date, end=self.end_date, df=self.analytic_b)
         # calculate cum_return for each sector
         agg_p = processing.agg_to_daily_sector(cliped_p)
         agg_b = processing.agg_to_daily_sector(cliped_b)
