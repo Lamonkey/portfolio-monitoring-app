@@ -827,17 +827,22 @@ def get_portfolio_anlaysis(analytic_p, analytic_b):
     agg_p.loc[0, 'return'] = 0
     agg_b.loc[0, 'return'] = 0
 
-    # first ts entry should have 0 pnl
-    agg_p.loc[0, 'pnl'] = 0
 
-    # calculate accumulative pnl``
+    # total capital
+    agg_p['total_cap'] = agg_p['cash'] + agg_p['rest_cap']
+
+    # return using pct change of total_cap
+    # agg_p['return'] = agg_p['total_cap'].pct_change()
+
+    # calculate accumulative pnl
     agg_p['cum_pnl'] = agg_p['pnl'].cumsum()
 
     # using accumulative pnl to calculate
     agg_p['cum_return'] = agg_p['cum_pnl'] / (agg_p.loc[0, 'cash'] + agg_p.loc[0, 'rest_cap'])
 
-    # accumulative return 
+    # accumulative return vgb
     agg_b['cum_return'] = (agg_b['return'] + 1).cumprod() - 1
+    
 
     # merge
     merged_df = pd.merge(
@@ -845,11 +850,13 @@ def get_portfolio_anlaysis(analytic_p, analytic_b):
     merged_df.sort_values('period', inplace=True)
 
     # risk, using population deviation
-    merged_df['risk'] = merged_df['return_p'].expanding(min_periods=1).std()
+    merged_df['risk'] = merged_df['return_p'].expanding(min_periods=1).std() * math.sqrt(252)
 
+    # active return
+    merged_df['active_return'] = merged_df['return_p'] - merged_df['return_b']
     # tracking error
-    merged_df['tracking_error'] = (
-        merged_df['return_p'] - merged_df['return_b']).expanding(min_periods=1).std()
+    merged_df['tracking_error'] = merged_df['active_return']\
+        .expanding(min_periods=1).std() * math.sqrt(252)
 
 
     return merged_df
