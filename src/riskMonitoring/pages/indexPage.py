@@ -1,11 +1,19 @@
 import panel as pn
-from riskMonitoring.sidebar import SideNavBar
-import riskMonitoring.indexPageComponents as indexPageComponents
+from riskMonitoring.components import sidebar
 import riskMonitoring.processing as processing
 import riskMonitoring.db_operation as db
 import riskMonitoring.api as api
 import riskMonitoring.utils as utils
 import pandas as pd
+from riskMonitoring.components import (
+    maxDrawDown,
+    trendPlot,
+    sectorPerformance,
+    overview,
+    returnAnalysis,
+    cashPosition,
+    bestAndWorstStocks
+)
 
 pn.extension('mathjax')
 pn.extension('plotly')
@@ -16,7 +24,7 @@ template = pn.template.ReactTemplate(
     title='Portfolio一览',
     # side_bar_width=200,
     collapsed_sidebar=True,
-    sidebar=[SideNavBar()],
+    sidebar=[sidebar.Component()],
     cols={'lg': 12, 'md': 8, 'sm': 3, 'xs': 3, 'xxs': 3},
     save_layout=True,
     prevent_collision=False,
@@ -37,19 +45,19 @@ else:
     max_width = 4000
     min_width = 300
     styles = {'border': '1px solid black', 'padding': '10px'}
-    stock_overview = indexPageComponents.BestAndWorstStocks(
+    stock_overview = bestAndWorstStocks.Component(
         analytic_df=analytic_p,
         styles=styles,
         title="股票表现排名"
     )
-    composation_card = indexPageComponents.PortfolioCompositionCard(
+    composation_card = cashPosition.Component(
         analytic_df=analytic_p,
         max_width=max_width,
         min_width=min_width,
         styles=styles
 
     )
-    return_analysis = indexPageComponents.ReturnAnlaysisCard(
+    return_analysis = returnAnalysis.Component(
         calculated_p_stock=analytic_p,
         calculated_b_stock=analytic_b,
         title='回报率分析',
@@ -57,19 +65,19 @@ else:
         min_width=min_width,
         styles=styles
     )
-    total_return_card = indexPageComponents.OverviewCard(
+    total_return_card = overview.Component(
         b_stock_df=analytic_b,
         p_stock_df=analytic_p,
         styles=styles,
         value=(0, 20))
-    drawdown_card = indexPageComponents.DrawDownCard(
+    drawdown_card = maxDrawDown.Component(
         calculated_p_stock=analytic_p,
         max_width=max_width,
         min_width=min_width,
         styles=styles,
     )
 
-    sector_performance = indexPageComponents.SectorPerformance(
+    sector_performance = sectorPerformance.Component(
         analytic_p=analytic_p,
         analytic_b=analytic_b,
         title='行业表现',
@@ -79,11 +87,11 @@ else:
     # template.main[0, :] = top_header
     foo_df = processing.get_draw_down(analytic_p)
     # top header
-    cum_pnl_trend = indexPageComponents.TrendPlot(
+    cum_pnl_trend = trendPlot.Component(
         title='累计pnl', data_series=foo_df.cum_pnl)
-    cum_return_trend = indexPageComponents.TrendPlot(
+    cum_return_trend = trendPlot.Component(
         title='累计回报率', data_series=foo_df.cum_return)
-    cum_return_dd = indexPageComponents.TrendPlot(
+    cum_return_dd = trendPlot.Component(
         title='最大回撤', data_series=foo_df.cum_return_dd)
 
     template.main[0, 0:4] = cum_pnl_trend

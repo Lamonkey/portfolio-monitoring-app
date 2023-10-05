@@ -2,7 +2,7 @@ from panel.viewable import Viewer
 import panel as pn
 
 
-class SideNavBar(Viewer):
+class Component(Viewer):
 
     def __init__(self, **params):
         self.pages = {

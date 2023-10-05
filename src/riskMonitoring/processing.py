@@ -4,7 +4,7 @@ from datetime import datetime
 import hvplot.pandas
 import math
 import numpy as np
-from settings import HANDLE_FEE
+from riskMonitoring.settings import HANDLE_FEE
 
 def get_processing_result_of_stocks_df(stock_df, profile_df):
 
@@ -830,7 +830,7 @@ def get_portfolio_anlaysis(analytic_p, analytic_b):
     # first ts entry should have 0 pnl
     agg_p.loc[0, 'pnl'] = 0
 
-    # calculate accumulative pnl
+    # calculate accumulative pnl``
     agg_p['cum_pnl'] = agg_p['pnl'].cumsum()
 
     # using accumulative pnl to calculate

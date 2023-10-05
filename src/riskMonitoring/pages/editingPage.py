@@ -1,13 +1,13 @@
 
 
 import panel as pn
-from riskMonitoring.utils import create_stocks_entry_from_excel, style_number, create_share_changes_report, time_in_beijing 
+from riskMonitoring.utils import create_stocks_entry_from_excel, style_number, create_share_changes_report, time_in_beijing
 from bokeh.models.widgets.tables import NumberEditor, SelectEditor
 import pandas as pd
 import riskMonitoring.api as api
 import riskMonitoring.db_operation as db
 import riskMonitoring.pipeline as pipeline
-from riskMonitoring.sidebar import SideNavBar
+from riskMonitoring.components.sidebar import Component
 
 
 pn.extension()
@@ -470,7 +470,7 @@ template = pn.template.ReactTemplate(
     title='portfolio编辑',
     cols={'lg': 12, 'md': 8, 'sm': 3, 'xs': 3, 'xxs': 3},
     collapsed_sidebar=True,
-    sidebar=[SideNavBar()],
+    sidebar=[Component()],
     save_layout=True,
 )
 template.main[0:3, 0:3] = editor_widget
