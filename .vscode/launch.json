@@ -1,6 +1,7 @@
 {
     "version": "0.2.0",
     "configurations": [
+
         {
             "name": "panel serve",
             "type": "python",
@@ -10,7 +11,9 @@
                 "panel",
                 "serve",
                 "${relativeFile}",
-                "--show"
+                "--show",
+                "--rest-provider",
+                "tranquilizer"
             ],
             "console": "integratedTerminal",
             "justMyCode": true

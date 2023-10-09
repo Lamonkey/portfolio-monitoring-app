@@ -3,12 +3,14 @@
 import panel as pn
 from riskMonitoring.utils import create_stocks_entry_from_excel, style_number, create_share_changes_report, time_in_beijing
 from bokeh.models.widgets.tables import NumberEditor, SelectEditor
+from tranquilizer import tranquilize
 import pandas as pd
 import riskMonitoring.api as api
 import riskMonitoring.db_operation as db
 import riskMonitoring.pipeline as pipeline
 from riskMonitoring.components.sidebar import Component
-
+import json
+from riskMonitoring import utils
 
 pn.extension()
 pn.extension('tabulator')
@@ -20,6 +22,34 @@ pn.extension(notifications=True)
 # the width of iphone se
 MIN_COMPONENT_WIDTH = 375
 MAX_COMPONENT_WIDTH = 600
+
+@tranquilize(method="POST")
+def upload_to_db(data):
+    # check if valid json
+    try:
+        data = json.loads(data)
+    except Exception:
+        return {'status': 401, 'message': 'not a valid json format'}
+    
+    # check json match the format
+    try:
+        utils.validate_stock_json(data)
+    except Exception as e:
+        return {'status': 402, 'message': str(e)}
+    # check if profile df is valid
+    try:
+        data = utils.create_profile_from_json(data)
+    except Exception as e:
+        return {'status': 403, 'message': str(e)}
+    # check if db already have ticker with same time stamp
+    try:
+        db.add_new_portfolio(data)
+    except Exception as e:
+        return {'status': 404, 'message': str(e)}
+    # save to db
+    # data = json.loads(data)
+    # print(data)
+    return f'transaction succedd'
 
 
 def create_portfolio_stream_entry(stocks, portfolio_df):
@@ -404,6 +434,9 @@ def app():
             portfolio_tabulator.patch({
                 'sync_to_db': [(index, e.value) for index in indices]
             }, as_index=True)
+
+
+
 
     @notify
     def handle_force_recalculation(e):

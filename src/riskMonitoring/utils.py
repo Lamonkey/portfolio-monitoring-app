@@ -7,7 +7,6 @@ from sqlalchemy import create_engine
 import os
 
 
-
 def clip_df(start, df: pd.DataFrame, on='time', end=None):
     '''
     return a copy of df between start and end date inclusive
@@ -15,7 +14,7 @@ def clip_df(start, df: pd.DataFrame, on='time', end=None):
     # start of that day
     start = start.replace(hour=0, minute=0, second=0, microsecond=0)
     # end of that day
-    
+
     if end is None:
         return df[df[on] >= start].copy()
     else:
@@ -237,8 +236,149 @@ def create_html_report(result: list[tuple]):
 
 
 def update_legend_name(fig, colname_to_name):
+    '''
+    update plotly legend name using colname_to_name map
+    '''
     fig.for_each_trace(lambda t: t.update(name=colname_to_name.get(t.name, t.name),
                                           legendgroup=colname_to_name.get(
         t.name, t.name),
 
     ))
+
+
+def validate_stock_json(data):
+    '''
+    check all stock in stock json match the required format
+
+    Parameters
+    ----------
+    data: list of stock entry
+        [{ticker, shares, ave_prie, rest_cap, time}]
+    '''
+    # all has date
+    all_has_date = all([entry.get('date', None) is not None for entry in data])
+    if not all_has_date:
+        raise Exception('All stock entry should have date')
+    # all has ticker
+    all_has_ticker = all(
+        [entry.get('ticker', None) is not None for entry in data])
+    if not all_has_ticker:
+        raise Exception('All stock entry should have ticker')
+
+    # all has aver_price
+    all_has_ave_price = all(
+        [entry.get('ave_price', None) is not None for entry in data])
+    if not all_has_ave_price:
+        raise Exception('All stock entry should have ave_price')
+
+    # all has rest_cap
+    all_has_rest_cap = all(
+        [entry.get('rest_cap', None) is not None for entry in data])
+    if not all_has_rest_cap:
+        raise Exception('All stock entry should have rest_cap')
+
+    # check if shares is int
+    all_shares_int = all([isinstance(entry['shares'], int) for entry in data])
+    if not all_shares_int:
+        raise Exception('All stock entry should have integer shares')
+
+    # check if ave_price is float or int
+    all_ave_price_float = all(
+        [isinstance(entry['ave_price'], (float, int)) for entry in data])
+    if not all_ave_price_float:
+        raise Exception(
+            'All stock entry should have float or integer ave_price')
+
+    # check if reset cash is int or float
+    all_rest_cap_float = all(
+        [isinstance(entry['rest_cap'], (float, int)) for entry in data])
+    if not all_rest_cap_float:
+        raise Exception(
+            'All stock entry should have float or integer rest_cap')
+
+    # check if date string match y-m-d h:m:s
+    try:
+        [datetime.datetime.strptime(
+            entry['date'], '%Y-%m-%d %H:%M:%S') for entry in data]
+    except ValueError:
+        raise Exception(
+            'All stock entry should have date string match %Y-%m-%d %H:%M:%S')
+
+    # all entry should have the same date and same cash
+    all_same_date = all([entry['date'] == data[0]['date'] for entry in data])
+    if not all_same_date:
+        raise Exception('All stock entry should have the same date')
+    all_same_cash = all([entry['rest_cap'] == data[0]['rest_cap']
+                        for entry in data])
+    if not all_same_cash:
+        raise Exception('All stock entry should have the same rest_cap')
+
+    # all entry have different ticker
+    all_different_ticker = len(
+        set([entry['ticker'] for entry in data])) == len(data)
+    if not all_different_ticker:
+        raise Exception('All stock entry should have different ticker')
+
+    # all entry have positive shares
+    all_positive_shares = all([entry['shares'] > 0 for entry in data])
+    if not all_positive_shares:
+        raise Exception('All stock entry should have positive shares')
+
+    # all entry have positive ave_price
+    all_positive_ave_price = all([entry['ave_price'] > 0 for entry in data])
+    if not all_positive_ave_price:
+        raise Exception('All stock entry should have positive ave_price')
+
+    # all entry have positive rest_cap
+    all_positive_rest_cap = all([entry['rest_cap'] > 0 for entry in data])
+    if not all_positive_rest_cap:
+        raise Exception('All stock entry should have positive rest_cap')
+
+    return True
+
+
+def create_profile_from_json(json_data, use_ave_price=True):
+    '''
+    create a profile df from json data
+
+    Parameters
+    ----------
+    json_data: list of stock entry
+        [{ticker, shares, ave_prie, rest_cap, time}]
+    use_ave_price: bool
+        if True, use ave_price to calculate weight, otherwise use latest close price
+    '''
+
+    # convert date to datetime object
+    df = pd.DataFrame(json_data)
+
+    # convert date string to datetime object
+    df['date'] = df.apply(lambda x: datetime.datetime.strptime(
+        x['date'], '%Y-%m-%d %H:%M:%S'), axis=1)
+    df['date'] = pd.to_datetime(df['date'])
+    all_stock_info = db.get_all_stocks_infos()
+
+    # convert ticker to jq format 
+    df['ticker'] = df.ticker.str.lower()
+
+    # check if all ends in sz or sh
+    if not df['ticker'].str.endswith(('.sz', '.sh', '.xshg', '.xshe')).all():
+        raise Exception('All ticker should end with .SZ, .SH or .XSHG, .XSHE ')
+    
+    # replace suffix to jq format
+    df['ticker'] = df.ticker.str.replace(
+        r'\.(sz|sh)$', lambda m: '.XSHE' if m.group() == '.sz' else '.XSHG', regex=True)
+
+    df = pd.merge(df, all_stock_info, on='ticker', how='left')
+
+    # check if any display name is null
+    if df['display_name'].isnull().any():
+        null_ticker = df[df['display_name'].isnull()]['ticker'].tolist()
+        raise Exception(f'{null_ticker} is not a valid ticker')
+
+    # calculate weight using ave_price
+    df['cash'] = df['ave_price'] * df['shares']
+    df['weight'] = df['cash'] / df['cash'].sum()
+    # drop start_date, end_date, type 
+    df.drop(columns=['start_date', 'end_date', 'type'], inplace=True)
+    return df

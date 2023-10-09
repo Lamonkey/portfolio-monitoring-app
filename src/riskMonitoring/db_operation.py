@@ -3,7 +3,7 @@ Abstraction for saving data to db
 '''
 import pandas as pd
 import riskMonitoring.table_schema as ts
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 import os
 
 current_path = os.path.dirname(os.path.abspath(__file__))
@@ -278,4 +278,33 @@ def update_portfolio_profile_to_db(portfolio_df):
 
     except Exception as e:
         print(e)
+        raise e
+
+
+def add_new_portfolio(portfolio_df, override=True):
+    # create a portfolio df
+    if (not _validate_schema(portfolio_df, ts.PORTFOLIO_TABLE_SCHEMA)):
+        raise ValueError(
+            'uploaded portfolio_df has different schema than PORTFOLIO_DB_SCHEMA')
+    try:
+        with create_engine(db_url).connect() as conn:
+            # check have duplicate ts entry
+            query = f"SELECT * FROM {ts.PORTFOLIO_TABLE} WHERE DATE(date) = DATE('{portfolio_df.date[0]}')"
+            df = pd.read_sql(query, con=conn)
+
+            # raise error if not in overrride mode
+            if len(df) != 0 and not override:
+                raise Exception(
+                    f'Portfolio already exist for date {portfolio_df.date[0]}')
+            
+            # delete the duplicate if override is true
+            elif len(df) != 0 and override:
+                query = f"DELETE FROM {ts.PORTFOLIO_TABLE} WHERE DATE(date) = DATE('{portfolio_df.date[0]}')"
+                conn.execute(text(query))
+                conn.commit()
+
+        # append to db 
+        _append_df_to_db(portfolio_df, ts.PORTFOLIO_TABLE, ts.PORTFOLIO_TABLE_SCHEMA)
+
+    except Exception as e:
         raise e
