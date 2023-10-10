@@ -1,31 +1,17 @@
-FROM python:3.11
+FROM python:3.9
 
 # Directory to store the code
 RUN mkdir /code
 
 WORKDIR /code
+# Copy the code to the container
+COPY . /code
 
-COPY ./requirements.txt /code/requirements.txt
+# install requirements
 RUN python3 -m pip install --no-cache-dir --upgrade pip
 RUN python3 -m pip install --no-cache-dir --upgrade -r /code/requirements.txt
 
-COPY . /code
-
-# make database writable
-RUN chmod 777 /code/instance
-
-
-
-
-WORKDIR /code/src
-# store secrete key for cookie encryption
-
+WORKDIR /code/src/riskMonitoring
 
 # Start the panel app
-CMD ["panel", "serve", "editingPage.py", "indexPage.py","--basic-auth", "/code/instance/credential.json", "--cookie-secret=${SECRET_COOKIE}", "--setup","backgroundTask.py", "--address", "0.0.0.0", "--port", "7860", "--allow-websocket-origin", "*", '--admin']
-
-# permission required by huggingface
-RUN mkdir /.cache
-RUN chmod 777 /.cache
-RUN mkdir .chroma
-RUN chmod 777 .chroma
+CMD panel serve pages/* --basic-auth /code/instance/credential.json --cookie-secret=${SECRET_COOKIE} --setup backgroundTask.py --address 0.0.0.0 --port 7860 --admin --rest-provider tranquilizer --allow-websocket-origin "*"
