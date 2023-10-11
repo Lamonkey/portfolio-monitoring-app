@@ -7,7 +7,6 @@ current_path = os.path.dirname(os.path.abspath(__file__))
 db_dir = os.path.join(current_path, "../..", 'instance', 'local.db')
 db_url = f'sqlite:///{db_dir}'
 
-
 def _create_table_with_schema(table_name: str, table_schema: dict):
     with create_engine(db_url).connect() as conn:
         df = pd.DataFrame(
