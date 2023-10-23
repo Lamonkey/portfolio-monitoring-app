@@ -32,7 +32,7 @@ class Component(Viewer):
         # Calculate the risk, tracking error, active return
 
         # use accumulative result from last row
-        most_recent_row = df.loc[df.period.idxmax(
+        most_recent_row = df.loc[df.time.idxmax(
         )]
         active_return = most_recent_row.cum_return_p - most_recent_row.cum_return_b
         tracking_error = most_recent_row.tracking_error
@@ -240,11 +240,7 @@ class Component(Viewer):
         return fig.to_dict()
     
     def create_raw_data_table(self, df):
-        tabulator = pn.widgets.Tabulator(df,
-                                         sizing_mode='stretch_both',
-                                         pagination='local',)
-        
-        return tabulator
+        return df
                                 
     @param.depends('date_range_slider.value', 'b_stock_df', 'p_stock_df', watch=True)
     def update(self):
@@ -254,14 +250,15 @@ class Component(Viewer):
         clip_b = utils.clip_df(start=start, end=end, df=self.b_stock_df)
         df = processing.get_portfolio_anlaysis(
             analytic_b=clip_b, analytic_p=clip_p)
-        df['x'] = df['period'].dt.start_time.dt.strftime('%Y-%m-%d')
+        df['x'] = df['time']
+        # df['x'] = df['period'].dt.start_time.dt.q   strftime('%Y-%m-%d')
         self.report.object = self.create_report(df)
         self.return_plot.object = self.create_cum_return_plot(df) 
         self.ratio_plot.object = self.create_return_ratio(df)
         self.cum_pnl_plot.object = self.create_cum_pnl_plot(df)
         self.risk_plot.object = self.create_risk_plot(df)
         self.tracking_error_plot.object = self.create_tracking_error_plot(df)
-        self.result_table = self.create_raw_data_table(df)
+        self.result_table.value = self.create_raw_data_table(df)
 
     def __init__(self, b_stock_df, p_stock_df, styles, **params):
         self.styles = styles
@@ -278,7 +275,7 @@ class Component(Viewer):
         self.ratio_plot = pn.pane.Plotly()
         self.risk_plot = pn.pane.Plotly()
         self.tracking_error_plot = pn.pane.Plotly()
-        # self.result_table = 
+        self.result_table = pn.widgets.Tabulator(sizing_mode='stretch_both', pagination='local')
         self.report = pn.pane.HTML(sizing_mode='stretch_width')
         self.update()
 
