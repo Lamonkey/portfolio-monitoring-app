@@ -6,6 +6,7 @@ import math
 import numpy as np
 from riskMonitoring.settings import HANDLE_FEE
 
+
 def get_processing_result_of_stocks_df(stock_df, profile_df):
 
     # add sector_name display_name name
@@ -364,8 +365,9 @@ def create_analytic_df(price_df, profile_df):
 
     # fill close price with ave_price in profile df if exist
     if 'ave_price' in df.columns:
-       df.loc[df['ave_price'].notna(),'close'] = df[df['ave_price'].notna()]['ave_price']
-        
+        df.loc[df['ave_price'].notna(
+        ), 'close'] = df[df['ave_price'].notna()]['ave_price']
+
     # add sector, aggregate_sector, display_name and name to missing rows
     grouped = df.groupby('ticker')
     df['sector'] = grouped['sector'].fillna(method='ffill')
@@ -383,7 +385,8 @@ def create_analytic_df(price_df, profile_df):
         # calcualte handling fee
         df['handling_fee'] = grouped['shares'].diff()
         # TODO: currently not needed so set to 0 for both cases
-        df['handling_fee'] = df['handling_fee'].apply(lambda x: 0 if x > 0 else 0)
+        df['handling_fee'] = df['handling_fee'].apply(
+            lambda x: 0 if x > 0 else 0)
         df['handling_fee'] = df['handling_fee'] * HANDLE_FEE * df['close']
 
     # fill rest_cap for portfolio
@@ -818,46 +821,45 @@ def get_portfolio_anlaysis(analytic_p, analytic_b):
 
     used by the portfolio summary component
     '''
-    # aggregate to daily
-    agg_p = agg_to_daily(analytic_p)
-    agg_b = agg_to_daily(analytic_b)
-
-    # first ts entry should have 0 as return
-    agg_p.sort_values(by=['period'], inplace=True)
-    agg_b.sort_values(by=['period'], inplace=True)
-    agg_p.loc[0, 'return'] = 0
-    agg_b.loc[0, 'return'] = 0
-
-
+    # aggregate by exact time
+    analytic_p = analytic_p.groupby('time')\
+        .agg({'cash': 'sum', 'rest_cap': 'first', 'return': 'sum', 'pnl': 'sum'})\
+        .reset_index()
+    analytic_b = analytic_b.groupby('time')\
+        .agg({'return': 'sum'})\
+        .reset_index()
+    # first ts entry should have 0 as return and pnl
+    analytic_p = analytic_p.sort_values(by=['time'])
+    analytic_b = analytic_b.sort_values(by=['time'])
+    analytic_p.iloc[0, analytic_p.columns.get_loc('return')] = 0
+    analytic_b.iloc[0, analytic_b.columns.get_loc('return')] = 0
+    analytic_p.iloc[0, analytic_p.columns.get_loc('pnl')] = 0
     # total capital
-    agg_p['total_cap'] = agg_p['cash'] + agg_p['rest_cap']
-
-    # return using pct change of total_cap
-    # agg_p['return'] = agg_p['total_cap'].pct_change()
+    analytic_p['total_cap'] = analytic_p['cash'] + analytic_p['rest_cap']
 
     # calculate accumulative pnl
-    agg_p['cum_pnl'] = agg_p['pnl'].cumsum()
+    analytic_p['cum_pnl'] = analytic_p['pnl'].cumsum()
 
-    # using accumulative pnl to calculate
-    agg_p['cum_return'] = agg_p['cum_pnl'] / (agg_p.loc[0, 'cash'] + agg_p.loc[0, 'rest_cap'])
+    # using accumulative pnl to calculate return
+    analytic_p['cum_return'] = analytic_p['cum_pnl'] / \
+        (analytic_p.loc[0, 'cash'] + analytic_p.loc[0, 'rest_cap'])
 
     # accumulative return vgb
-    agg_b['cum_return'] = (agg_b['return'] + 1).cumprod() - 1
-    
+    analytic_b['cum_return'] = (analytic_b['return'] + 1).cumprod() - 1
 
     # merge
     merged_df = pd.merge(
-        agg_p, agg_b, on=['period'], how='outer', suffixes=('_p', '_b'))
-    merged_df.sort_values('period', inplace=True)
+        analytic_p, analytic_b, on=['time'], how='outer', suffixes=('_p', '_b'))
+    merged_df.sort_values('time', inplace=True)
 
-    # risk, using population deviation
-    merged_df['risk'] = merged_df['return_p'].expanding(min_periods=1).std() * math.sqrt(252)
+    # risk, using population deviation and normalized by sqrt(252)
+    merged_df['risk'] = merged_df['return_p'].expanding(
+        min_periods=1).std() * math.sqrt(252)
 
     # active return
     merged_df['active_return'] = merged_df['return_p'] - merged_df['return_b']
     # tracking error
     merged_df['tracking_error'] = merged_df['active_return']\
         .expanding(min_periods=1).std() * math.sqrt(252)
-
 
     return merged_df
