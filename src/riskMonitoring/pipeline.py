@@ -200,12 +200,12 @@ def left_fill_stocks_price():
         start = p_start[0]
         end = stock_start[0]
 
-    delta_time = dt.timedelta(days=365)
+    delta_time = dt.timedelta(days=30)
     with tqdm(total=(end - start) / delta_time, colour='green', desc='Fetching stock price') as pbar:
         while start < end:
             # fetch and update
             new_entry = _fetch_all_stocks_price_between(
-                start, start + delta_time)
+                start, min(end, start + delta_time))
             db.append_to_stocks_price_table(new_entry)
             # skip previous end date since it is inclusive
             start = min(start + delta_time + dt.timedelta(days=1), end)
