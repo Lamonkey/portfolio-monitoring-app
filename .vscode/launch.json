@@ -1,8 +1,6 @@
 {
     "version": "0.2.0",
     "configurations": [
-
-
         {
             "name": "panel serve",
             "type": "python",
@@ -12,11 +10,6 @@
                 "panel",
                 "serve",
                 "${relativeFile}",
-                "--show",
-                "--rest-provider",
-                "tranquilizer"
-                "--setup",
-                "/Users/lamonkey/Desktop/portfolio-monitoring-app/src/riskMonitoring/backgroundTask.py"
             ],
             "console": "integratedTerminal",
             "justMyCode": true
