@@ -46,10 +46,17 @@ def upload_to_db(data):
         db.add_new_portfolio(data)
     except Exception as e:
         return {'status': 404, 'message': str(e)}
-    # save to db
-    # data = json.loads(data)
-    # print(data)
-    return f'transaction succedd'
+    
+    # check if calculation can be performed
+    entry_date = data.date[0].to_pydatetime()
+    # date is from older than yester
+    if entry_date.date() < utils.time_in_beijing().date():
+        return "succeed:new result can be calculated, you can use api to trigger calculation"
+    # is today but current time is after 4pm
+    elif entry_date.date() == utils.time_in_beijing().date() and utils.time_in_beijing().hour >= 16:
+        return "succeed:new result can be calculated, you can use api to trigger calculation"
+    else:
+        return 'succeed: new result will be available after 4pm'
 
 
 def create_portfolio_stream_entry(stocks, portfolio_df):
