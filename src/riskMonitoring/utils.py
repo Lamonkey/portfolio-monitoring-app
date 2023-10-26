@@ -5,7 +5,7 @@ import pandas as pd
 from riskMonitoring import db_operation as db
 from sqlalchemy import create_engine
 import os
-
+import json
 
 def clip_df(start, df: pd.DataFrame, on='time', end=None):
     '''
@@ -382,3 +382,17 @@ def create_profile_from_json(json_data, use_ave_price=True):
     # drop start_date, end_date, type 
     df.drop(columns=['start_date', 'end_date', 'type'], inplace=True)
     return df
+
+def update_credential_file():
+    # current path
+    current_path = os.path.dirname(os.path.abspath(__file__))
+    # credential path
+    credential_path = os.path.join(current_path, "../..", 'instance', 'credential.json')
+    # load all user info
+    user_info = db.get_all_user_info()
+    # get username and password as dictioanry
+    credentail = user_info.set_index('username')['password'].to_dict()
+    # output as json
+    with open(credential_path, 'w') as f:
+        json.dump(credentail, f)
+
