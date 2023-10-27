@@ -107,6 +107,15 @@ def create_portfolio_stream_entry(stocks, portfolio_df):
     # fill empty ave_price with latest closing price
     # TODO: for now all ave_price is fetching from api
     ticker = stream_entry.ticker.tolist()
+
+    # when not holding any stocks
+    if all(item == '' for item in ticker):
+        # fill ave_price with pd.nan
+        stream_entry['ave_price'] = float('nan')
+        stream_entry['cash'] = 0
+        stream_entry['weight'] = 0
+        return stream_entry
+
     close_price = api.fetch_stocks_price(
         security=ticker, end_date=date, frequency='minute', count=1)[['ticker', 'close']]
     close_price.rename(columns={'close': 'ave_price'}, inplace=True)

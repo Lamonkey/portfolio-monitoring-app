@@ -333,7 +333,11 @@ def _uniformize_time_series(profile_df):
 
         # row that has ticker not in tickers_next
         missing_tickers = current_df[~tickers_current.isin(
-            tickers_next)].copy()
+            tickers_next)]
+        
+        # not include ticker is ""
+        missing_tickers = missing_tickers[missing_tickers.ticker != ""].copy()
+        # missing_tickers = missing_tickers[~missing_tickers.ticker.isna()]
 
         if len(missing_tickers) != 0:
             missing_tickers.time = next_period
@@ -393,12 +397,18 @@ def create_analytic_df(price_df, profile_df):
     if ('rest_cap' in df.columns):
         df['rest_cap'] = grouped['rest_cap'].fillna(method='ffill')
 
-    # remove profile and price entry before first profile entry from df
+    # remove stock price entry where stock has been sold
     df.dropna(subset=['ini_w'], inplace=True)
-    df.dropna(subset=['close'], inplace=True)
+    if 'rest_cap' in df.columns:
+        # handle entry has no stock
+        df = df[~((df.close.isna()) & (df.ticker != ""))]
+        df = df[(df['ini_w'] != 0) | (df.ticker == "")].copy()
+    else:
+        df.dropna(subset=['close'], inplace=True)
+        df = df[df['ini_w'] != 0].copy()
 
     # remove where weight is 0
-    df = df[df['ini_w'] != 0].copy()
+
     return df
 
 
