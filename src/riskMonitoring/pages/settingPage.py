@@ -6,11 +6,32 @@ from riskMonitoring.components import sidebar
 from typing import Dict
 from riskMonitoring.utils import (update_credential_file)
 import pandas as pd
+
+import inspect
+import importlib
+
 from riskMonitoring.db_operation import (
     update_user_info,
     get_all_user_info
 )
 xs = np.linspace(0, np.pi)
+
+
+def createMonitorManger(**params):
+    # Assuming your module is named "monitor.py"
+    module_name = "riskMonitoring.alertMonitor"
+    module = importlib.import_module(module_name)
+
+    # Get all classes defined in the module
+    monitor_and_value = {name: cls for name,
+                         cls in inspect.getmembers(module, inspect.isclass)}
+    print(monitor_and_value)
+    # Get the names of the classes
+    # class_names = [cls.__name__ for cls in classes]
+
+    multi_choice = pn.widgets.MultiChoice(name='MultiSelect', value=[],
+                                          options=list(monitor_and_value.keys()))
+    return pn.Column(multi_choice, height=200)
 
 
 def createUserCredentialManager(**params):
@@ -26,15 +47,15 @@ def createUserCredentialManager(**params):
     add_user_btn = pn.widgets.Button(name="Add User")
     discard_btn = pn.widgets.Button(name="Discard")
     apply_btn = pn.widgets.Button(name="Apply")
-    
+
     def handle_add_new(e):
         user_tabulator.stream(
-            {'username': '', 'password': '', 'email': '', 'role':'1'}, 
+            {'username': '', 'password': '', 'email': '', 'role': '1'},
             follow=False)
-    
+
     def handle_discard(e):
         user_tabulator.value = get_all_user_info()
-    
+
     def handle_apply(e):
         try:
             update_user_info(user_tabulator.value)
@@ -64,7 +85,7 @@ def createUserCredentialManager(**params):
                styles={"justify-content": "end"}
                ),
         sizing_mode='stretch_width',
-        )
+    )
 
 
 # Instantiate the template with widgets displayed in the sidebar
@@ -76,6 +97,7 @@ template = pn.template.ReactTemplate(
 )
 # Populate the main area with plots, to demonstrate the grid-like API
 template.main[:2, :4] = createUserCredentialManager()
+template.main[:2, 4:5] = createMonitorManger()
 
 # template.main[:3, 6:] = pn.Card(dfi_cosine.hvplot(**plot_opts).output(), title='Cosine')
 template.servable()
