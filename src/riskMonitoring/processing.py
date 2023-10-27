@@ -862,6 +862,10 @@ def get_portfolio_anlaysis(analytic_p, analytic_b):
         analytic_p, analytic_b, on=['time'], how='outer', suffixes=('_p', '_b'))
     merged_df.sort_values('time', inplace=True)
 
+    # forward fill the benmark return and cum return
+    merged_df['return_b'].fillna(method='ffill', inplace=True)
+    merged_df['cum_return_b'].fillna(method='ffill', inplace=True)
+    
     # risk, using population deviation and normalized by sqrt(252)
     merged_df['risk'] = merged_df['return_p'].expanding(
         min_periods=1).std() * math.sqrt(252)
