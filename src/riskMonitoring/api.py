@@ -230,38 +230,38 @@ def get_api_usage():
     return jq.get_query_count()
 
 
-@auth_api
-def fetch_stocks_price(profile: pd.DataFrame, start_date: datetime, end_date: datetime, frequency='daily') -> tuple[pd.DataFrame, List[str]]:
-    """
-    Return a dataframe contain stock price between period of time for price in a portfolio profile
+# @auth_api
+# def fetch_stocks_price(profile: pd.DataFrame, start_date: datetime, end_date: datetime, frequency='daily') -> tuple[pd.DataFrame, List[str]]:
+#     """
+#     Return a dataframe contain stock price between period of time for price in a portfolio profile
 
-    Arguments:
-        profile {pd.DataFrame} -- ticker | date | weight | sector | aggregate_sector | display_name | name
-        start_date {datetime} -- start date of the period include start date
-        end_date {datetime} -- end date of the period include end date
-        frequency {str} -- resolution of the price, default is daily
+#     Arguments:
+#         profile {pd.DataFrame} -- ticker | date | weight | sector | aggregate_sector | display_name | name
+#         start_date {datetime} -- start date of the period include start date
+#         end_date {datetime} -- end date of the period include end date
+#         frequency {str} -- resolution of the price, default is daily
 
-    Returns: Tuple(pd.DataFrame, List[str])
-        pd.DataFrame -- ticker date open close high low volumn money
-        error_message {list} -- a list of error message
-    """
-    error_message = []
-    start_str = start_date.strftime('%Y-%m-%d')
-    end_str = end_date.strftime('%Y-%m-%d')
-    if profile.date.min() < start_date:
-        # hanlde benchmark doesn't have weight on the exact date
-        start_str = profile.date.min().strftime('%Y-%m-%d')
+#     Returns: Tuple(pd.DataFrame, List[str])
+#         pd.DataFrame -- ticker date open close high low volumn money
+#         error_message {list} -- a list of error message
+#     """
+#     error_message = []
+#     start_str = start_date.strftime('%Y-%m-%d')
+#     end_str = end_date.strftime('%Y-%m-%d')
+#     if profile.date.min() < start_date:
+#         # hanlde benchmark doesn't have weight on the exact date
+#         start_str = profile.date.min().strftime('%Y-%m-%d')
 
-    ticker = profile['ticker'].to_list()
-    try:
+#     ticker = profile['ticker'].to_list()
+#     try:
 
-        data = jq.get_price(ticker, start_date=start_str,
-                            end_date=end_str, frequency=frequency)
-        data.rename(columns={'time': 'date', 'code': "ticker"}, inplace=True)
-        return data, error_message
-    except Exception as e:
-        error_message.append(f'Error when fetching {ticker} \n {e}')
-        return None, error_message
+#         data = jq.get_price(ticker, start_date=start_str,
+#                             end_date=end_str, frequency=frequency)
+#         data.rename(columns={'time': 'date', 'code': "ticker"}, inplace=True)
+#         return data, error_message
+#     except Exception as e:
+#         error_message.append(f'Error when fetching {ticker} \n {e}')
+#         return None, error_message
 
 
 @auth_api
@@ -269,6 +269,10 @@ def fetch_stocks_price(**params):
     '''request list of stock price from start_date to end_date with frequency or count'''
     stocks_df = jq.get_price(**params)
     stocks_df.rename(columns={'code': 'ticker'}, inplace=True)
+
+    if params.get('frequency') == 'daily':
+        # replace time to market close time
+        stocks_df['time'] = stocks_df['time'].apply(lambda x: x.replace(hour=15, minute=0, second=0))
     return stocks_df
 # jq.get_price(security='600673.XSHG', end_date=datetime.now(), frequency='1m', count=1)
 

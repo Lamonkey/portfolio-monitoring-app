@@ -1,5 +1,5 @@
 import panel as pn
-from riskMonitoring.components import sidebar
+from riskMonitoring.components import portfolioComposition, sidebar
 import riskMonitoring.processing as processing
 import riskMonitoring.db_operation as db
 import riskMonitoring.api as api
@@ -11,7 +11,6 @@ from riskMonitoring.components import (
     sectorPerformance,
     overview,
     returnAnalysis,
-    cashPosition,
     bestAndWorstStocks
 )
 
@@ -50,7 +49,7 @@ else:
         styles=styles,
         title="股票表现排名"
     )
-    composation_card = cashPosition.Component(
+    composation_card = portfolioComposition.Component(
         analytic_df=analytic_p,
         max_width=max_width,
         min_width=min_width,
