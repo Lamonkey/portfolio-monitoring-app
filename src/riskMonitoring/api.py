@@ -270,7 +270,7 @@ def fetch_stocks_price(**params):
     stocks_df = jq.get_price(**params)
     stocks_df.rename(columns={'code': 'ticker'}, inplace=True)
 
-    if params.get('frequency') == 'daily':
+    if params.get('frequency') == 'daily' or params.get('frequency') == '1d':
         # replace time to market close time
         stocks_df['time'] = stocks_df['time'].apply(lambda x: x.replace(hour=15, minute=0, second=0))
     return stocks_df
@@ -316,6 +316,11 @@ def fetch_benchmark_profile(start_date: datetime, end_date: datetime, delta_time
     update_df = update_df.drop_duplicates(
         subset=['ticker', 'date'], keep='last')
     update_df.reset_index(drop=True, inplace=True)
+
+    # replace time to same date 3pm
+    update_df['date'] = update_df['date'].apply(
+        lambda x: x.replace(hour=15, minute=0, second=0))
+    
     return update_df
 
 # print(fetch_stocks_price(security=['601077.XSHG','300009.XSHE'],end_date=datetime(2023, 9, 26 ,10, 17), frequency='1m',count=1))
