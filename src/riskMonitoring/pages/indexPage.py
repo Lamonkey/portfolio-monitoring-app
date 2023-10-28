@@ -71,6 +71,7 @@ else:
         value=(0, 20))
     drawdown_card = maxDrawDown.Component(
         calculated_p_stock=analytic_p,
+        analytic_b=analytic_b,
         max_width=max_width,
         min_width=min_width,
         styles=styles,
@@ -84,14 +85,15 @@ else:
     )
     # template.main.extend([drawdown_card, stock_overview, composation_card, monthly_return_card, total_return_card])
     # template.main[0, :] = top_header
-    foo_df = processing.get_draw_down(analytic_p)
+    foo_df = processing.get_draw_down(analytic_p, analytic_b)
     # top header
     cum_pnl_trend = trendPlot.Component(
         title='累计pnl', data_series=foo_df.cum_pnl)
     cum_return_trend = trendPlot.Component(
-        title='累计回报率', data_series=foo_df.cum_return)
+
+        title='累计回报率', data_series=foo_df['cum_return_p'])
     cum_return_dd = trendPlot.Component(
-        title='最大回撤', data_series=foo_df.cum_return_dd)
+        title='最大回撤', data_series=foo_df['total_cap_max_drawdown'])
 
     template.main[0, 0:4] = cum_pnl_trend
     template.main[0, 4:8] = cum_return_trend
