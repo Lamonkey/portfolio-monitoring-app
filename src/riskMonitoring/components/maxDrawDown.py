@@ -14,6 +14,9 @@ class Component(Viewer):
     end_date = param.Parameter()
 
     def __init__(self, styles, calculated_p_stock, analytic_b, max_width, min_width, **params):
+        '''
+        max draw down on total_cap, cum_pnl and active return
+        '''
         self.styles = styles
         self.max_width = max_width
         self.min_width = min_width
@@ -41,7 +44,11 @@ class Component(Viewer):
 
     def plot_drawdown(self, on='total_cap'):
         '''
-        plot either cum_return_dd or cum_pnl_dd
+        calcualte and plot max draw down on selected column
+        Parameters
+        ----------
+        on: str
+            column name to calculate max draw down
         '''
         cliped_df_p = self.calculated_p_stock[self.calculated_p_stock.time.between(
             self.start_date, self.end_date, inclusive='both')]
