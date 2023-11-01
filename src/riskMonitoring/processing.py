@@ -755,19 +755,22 @@ def agg_to_daily_sector(df: pd.DataFrame):
     '''
     aggregate a analytic df to daily sector view
     '''
-    df['period'] = df.time.dt.to_period('D')
-    on_column = {'return': 'sum', 'aggregate_sector': 'first', 'weight': 'sum'}
+    on_column = {'return': 'sum', 'aggregate_sector': 'first', 'weight': 'sum',}
     if 'cash' in df.columns:
         on_column['cash'] = 'sum'
     if 'pnl' in df.columns:
         on_column['pnl'] = 'sum'
-    agg_df = df.groupby(['period', 'aggregate_sector']).agg(on_column)
-    return agg_df.reset_index(level=1, drop=True).reset_index()
+    agg_df = df.groupby(['time', 'aggregate_sector']).agg(on_column)
+    agg_df = agg_df.reset_index(level=1, drop=True).reset_index()
+    agg_df['period'] = agg_df.time.dt.to_period('D')
+    # keep the largest time for each day
+    agg_df = agg_df[agg_df.groupby('period')['time'].transform(max) == agg_df['time']]
+    return agg_df
 
 
 def agg_to_daily(df: pd.DataFrame):
     '''
-    aggreate a analytic df to overal all daily view
+    aggreate a analytic df to overal all daily view, if multiple entry in a date only keeping the last ts entry
     '''
     df['period'] = df.time.dt.to_period('D')
     on_column = {'return': 'sum', 'period': 'first'}
@@ -891,14 +894,15 @@ def get_portfolio_anlaysis(analytic_p, analytic_b):
     # total capital
     analytic_p['total_cap'] = analytic_p['cash'] + analytic_p['rest_cap']
 
-    # calculate accumulative pnl for portfolio
-    analytic_p['cum_pnl'] = analytic_p.total_cap.diff()
-
+    # calculate accumulative pnl using total capital
+    analytic_p['pnl'] = analytic_p.total_cap.diff()
     # using accumulative pnl to calculate return
+    analytic_p['cum_pnl'] = analytic_p['pnl'].cumsum()
+    # cumulative return using pnl
     analytic_p['cum_return'] = analytic_p['cum_pnl'] / analytic_p.loc[0, 'total_cap']
-
     # accumulative return vgb
     analytic_b['cum_return'] = (analytic_b['return'] + 1).cumprod() - 1
+
 
     # merge
     merged_df = pd.merge(
