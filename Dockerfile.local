@@ -11,8 +11,11 @@ COPY . /code
 RUN python3 -m pip install --no-cache-dir --upgrade pip
 RUN python3 -m pip install --no-cache-dir --upgrade -r /code/requirements.txt
 
-WORKDIR /code/src/riskMonitoring
 
+# create a folder to store databse if dosn't esit, log and credential.json
+RUN mkdir -p /code/instance
+
+WORKDIR /code/src/riskMonitoring
 
 # initilize the app
 RUN python3 backgroundTask.py
