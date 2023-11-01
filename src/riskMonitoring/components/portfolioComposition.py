@@ -37,7 +37,8 @@ class Component(Viewer):
                                                      )
         self.tree_plot = pn.pane.Plotly()
         self.trend_plot = pn.pane.Plotly()
-        self.update_treeplot()
+        self.stock_tabulator = pn.widgets.Tabulator(layout="fit_data_stretch",width_policy='max')
+        self.update_treeplot_and_tabulator()
         self.update_trend_plot()
         super().__init__(**params)
 
@@ -84,18 +85,6 @@ class Component(Viewer):
         return fig.to_dict()
 
     def create_treemap(self, cap_on_date, selected_df):
-        # idle_cap = cap_on_date['rest_cap'] - cap_on_date['cash']
-        # selected_df['position'] = '股票'
-        # not_in_portfolio_row = pd.DataFrame({
-        #     'display_name': ['闲置'],
-        #     'position': ['闲置'],
-        #     'aggregate_sector': ['闲置'],
-        #     'cash': [idle_cap.values[0]],
-        #     'cum_return': [0]
-        # })
-        # df = pd.concat([selected_df, not_in_portfolio_row],
-        #                ignore_index=True)
-
         fig = px.treemap(selected_df,
                          #  path=[px.Constant('cash_position'), 'position',
                          #        'aggregate_sector', 'display_name'],
@@ -116,32 +105,28 @@ class Component(Viewer):
 
     def __panel__(self):
         self._layout = pn.Column(
-            pn.pane.HTML('<h1>资金分布</h1>'),
+            pn.pane.HTML('<h1>Portfolio 组成</h1>'),
             self.date_slider,
-            self.tree_plot,
+            pn.Tabs(('每日权重', self.tree_plot), ('daily shares', self.stock_tabulator)),
             self.date_range,
             self.trend_plot,
             sizing_mode='stretch_both',
             styles=self.styles,
             scroll=True
         )
-        # self._layout = pn.Card(self.datetime_picker,
-        #                        self.tree_plot,
-        #                        self.date_range,
-        #                        self.trend_plot,
-        #                        max_width=self.max_width,
-        #                        min_width=self.min_width,
-        #                        styles=styling.card_style,
-        #                        header=pn.pane.Str('资金分布'))
         return self._layout
 
     @param.depends('date_slider.value', watch=True)
-    def update_treeplot(self):
-        # add midnight time, becasue all daily price's time is midnight
-        date_time = datetime.combine(self.date_slider.value, time.min)
+    def update_treeplot_and_tabulator(self):
+        # create datetime at 3pm, which is the at market close
+        my_time = time(hour=15, minute=0, second=0)
+        date_time = datetime.combine(self.date_slider.value, my_time)
         # total cap of that day
         cap_on_date = self.daily_cap_df[self.daily_cap_df.time == date_time]
         # cap of each ticker
         selected_df = self.p_stock_df[self.p_stock_df.time == date_time].copy()
         tree_plot = self.create_treemap(cap_on_date, selected_df)
         self.tree_plot.object = tree_plot
+
+        # update tabulator
+        self.stock_tabulator.value = selected_df[['display_name','time','shares','pnl']]

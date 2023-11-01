@@ -8,6 +8,7 @@ class Component(Viewer):
         self.pages = {
             '编辑Portfolio': "/editingPage",
             '主页': "/indexPage",
+            '设置': "/settingPage",
         }
         self.styles = {
             'text-decoration': 'none',

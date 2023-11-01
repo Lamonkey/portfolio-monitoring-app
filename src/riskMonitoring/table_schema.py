@@ -50,3 +50,11 @@ BENCHMARK_TABLE_SCHEMA = {
     'aggregate_sector': str,
     'name': str
 }
+
+USER_TABLE = 'user_info'
+USER_TABLE_SCHEMA = {
+    'username': str,
+    'email': str,
+    'password': str,
+    'role': str
+}

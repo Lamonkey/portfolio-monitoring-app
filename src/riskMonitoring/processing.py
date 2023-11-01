@@ -6,6 +6,7 @@ import math
 import numpy as np
 from riskMonitoring.settings import HANDLE_FEE
 
+
 def get_processing_result_of_stocks_df(stock_df, profile_df):
 
     # add sector_name display_name name
@@ -280,22 +281,22 @@ def calculate_total_attribution(calculated_p_stock, calculated_b_stock):
     # return df
 
 
-def calcualte_return(df: pd.DataFrame, start, end):
-    '''
-    calcualte return within a window for each entry of ticker
-    inclusive
+# def calculate_cum_return_rate(df: pd.DataFrame):
+#     '''
+#     calcualte return within a window for each entry of ticker
+#     inclusive
 
-    this is an intermediate step to calculate attribute
-    calculation using the weighted_log_return
-    '''
-    df = df[(df.time >= start) & (df.time <= end)].copy()
-    df.sort_values(by=['time'], inplace=True)
+#     Parameters
+#     ----------
+#     df : dataframe
+#         sorted dafaframe 
+#     '''
+   
+#     # cum return
+#     df['cum_return'] = df.groupby('ticker')['pct'].apply(
+#         lambda x: (1 + x).cumprod() - 1).reset_index(level=0, drop=True)
 
-    # cum return
-    df['cum_return'] = df.groupby('ticker')['pct'].apply(
-        lambda x: (1 + x).cumprod() - 1).reset_index(level=0, drop=True)
-
-    return df
+#     return df
 
 
 def _uniformize_time_series(profile_df):
@@ -332,7 +333,11 @@ def _uniformize_time_series(profile_df):
 
         # row that has ticker not in tickers_next
         missing_tickers = current_df[~tickers_current.isin(
-            tickers_next)].copy()
+            tickers_next)]
+        
+        # not include ticker is ""
+        missing_tickers = missing_tickers[missing_tickers.ticker != ""].copy()
+        # missing_tickers = missing_tickers[~missing_tickers.ticker.isna()]
 
         if len(missing_tickers) != 0:
             missing_tickers.time = next_period
@@ -364,8 +369,9 @@ def create_analytic_df(price_df, profile_df):
 
     # fill close price with ave_price in profile df if exist
     if 'ave_price' in df.columns:
-       df.loc[df['ave_price'].notna(),'close'] = df[df['ave_price'].notna()]['ave_price']
-        
+        df.loc[df['ave_price'].notna(
+        ), 'close'] = df[df['ave_price'].notna()]['ave_price']
+
     # add sector, aggregate_sector, display_name and name to missing rows
     grouped = df.groupby('ticker')
     df['sector'] = grouped['sector'].fillna(method='ffill')
@@ -383,19 +389,26 @@ def create_analytic_df(price_df, profile_df):
         # calcualte handling fee
         df['handling_fee'] = grouped['shares'].diff()
         # TODO: currently not needed so set to 0 for both cases
-        df['handling_fee'] = df['handling_fee'].apply(lambda x: 0 if x > 0 else 0)
+        df['handling_fee'] = df['handling_fee'].apply(
+            lambda x: 0 if x > 0 else 0)
         df['handling_fee'] = df['handling_fee'] * HANDLE_FEE * df['close']
 
     # fill rest_cap for portfolio
     if ('rest_cap' in df.columns):
         df['rest_cap'] = grouped['rest_cap'].fillna(method='ffill')
 
-    # remove profile and price entry before first profile entry from df
+    # remove stock price entry where stock has been sold
     df.dropna(subset=['ini_w'], inplace=True)
-    df.dropna(subset=['close'], inplace=True)
+    if 'rest_cap' in df.columns:
+        # handle entry has no stock
+        df = df[~((df.close.isna()) & (df.ticker != ""))]
+        df = df[(df['ini_w'] != 0) | (df.ticker == "")].copy()
+    else:
+        df.dropna(subset=['close'], inplace=True)
+        df = df[df['ini_w'] != 0].copy()
 
     # remove where weight is 0
-    df = df[df['ini_w'] != 0].copy()
+
     return df
 
 
@@ -459,11 +472,13 @@ def calculate_attributes_between_dates(start, end, calculated_p_stock, calculate
 
     return df
 
-
-def calculate_cum_pnl(df, start, end):
-    '''return df with cumulative pnl within a window'''
-    df = df[df.time.between(start, end, inclusive='both')].copy()
-    df.sort_values(by=['time'], inplace=True)
+def calculate_cum_pnl(df: pd.DataFrame):
+    '''return df with cumulative pnl within a window
+    Parameters
+    ----------
+    df : dataframe
+       sorted dataframe on time with ticker and pnl collumn
+    '''
     grouped = df.groupby('ticker')
     df['cum_pnl'] = grouped['pnl'].cumsum()
     return df
@@ -742,22 +757,25 @@ def agg_to_daily_sector(df: pd.DataFrame):
     '''
     aggregate a analytic df to daily sector view
     '''
-    df['period'] = df.time.dt.to_period('D')
-    on_column = {'return': 'sum', 'aggregate_sector': 'first', 'weight': 'sum'}
+    on_column = {'return': 'sum', 'aggregate_sector': 'first', 'weight': 'sum',}
     if 'cash' in df.columns:
         on_column['cash'] = 'sum'
     if 'pnl' in df.columns:
         on_column['pnl'] = 'sum'
-    agg_df = df.groupby(['period', 'aggregate_sector']).agg(on_column)
-    return agg_df.reset_index(level=1, drop=True).reset_index()
+    agg_df = df.groupby(['time', 'aggregate_sector']).agg(on_column)
+    agg_df = agg_df.reset_index(level=1, drop=True).reset_index()
+    agg_df['period'] = agg_df.time.dt.to_period('D')
+    # keep the largest time for each day
+    agg_df = agg_df[agg_df.groupby('period')['time'].transform(max) == agg_df['time']]
+    return agg_df
 
 
 def agg_to_daily(df: pd.DataFrame):
     '''
-    aggreate a analytic df to overal all daily view
+    aggreate a analytic df to overal all daily view, if multiple entry in a date only keeping the last ts entry
     '''
     df['period'] = df.time.dt.to_period('D')
-    on_column = {'return': 'sum'}
+    on_column = {'return': 'sum', 'period': 'first'}
     if 'cash' in df.columns:
         on_column['cash'] = 'sum'
     if 'pnl' in df.columns:
@@ -765,7 +783,11 @@ def agg_to_daily(df: pd.DataFrame):
     if 'rest_cap' in df.columns:
         on_column['rest_cap'] = 'first'
 
-    agg_df = df.groupby('period').agg(on_column)
+    # aggretate by sum row with the same date
+    agg_df = df.groupby('time').agg(on_column).reset_index()
+
+    # keep only row have max time in each day
+    agg_df = agg_df[agg_df.groupby('period')['time'].transform(max) == agg_df['time']]
     return agg_df.reset_index()
 
 
@@ -780,7 +802,22 @@ def calculate_cum_return(df):
         df['cum_return'] = (df['return'] + 1).cumprod() - 1
 
 
-def get_draw_down(df):
+def calculate_max_draw_down(df, on):
+    """
+    find the max draw down on column
+    """
+    tmp_df = df[['period', on]].copy()
+
+    # Calculate the drawdown for each day
+    tmp_df['cum_max'] = tmp_df[on].cummax()
+    tmp_df['drawdown'] = (tmp_df[on] / tmp_df['cum_max']) - 1
+
+    # Find the maximum drawdown and the corresponding date for each day
+    max_drawdown = tmp_df['drawdown'].cummin()
+    df[f'{on}_max_drawdown'] = max_drawdown
+
+
+def get_draw_down(analytic_p, analytic_b):
     '''
     get draw down by pnl and accumulative return
 
@@ -790,25 +827,47 @@ def get_draw_down(df):
         analytic df
     '''
     # aggregate to daily
-    agg_df = agg_to_daily(df)
-    agg_df.sort_values(by=['period'], inplace=True)
+    agg_p = agg_to_daily(analytic_p)
+    agg_b = agg_to_daily(analytic_b)
 
-    # calculate accumulative return and accumulative pnl
-    agg_df['cum_pnl'] = agg_df['pnl'].cumsum()
-    agg_df['cum_return'] = agg_df['cum_pnl'] \
-        / (agg_df.loc[0, 'cash'] + agg_df.loc[0, 'rest_cap'])
+    # sort by day
+    agg_b.sort_values(by=['period'], inplace=True)
+    agg_p.sort_values(by=['period'], inplace=True)
 
-    # accumulative pnl draw down
-    agg_df['ex_max_cum_pnl'] = agg_df['cum_pnl'].expanding(min_periods=1).max()
-    agg_df['cum_pnl_dd'] = agg_df['cum_pnl'] / agg_df['ex_max_cum_pnl'] - 1
+    # calculate portfolio total cap
+    agg_p['total_cap'] = agg_p['cash'] + agg_p['rest_cap']
 
-    # accumulative return draw down
-    agg_df['ex_max_cum_return'] = agg_df['cum_return'].expanding(
-        min_periods=1).max()
-    agg_df['cum_return_dd'] = agg_df['cum_return'] / \
-        agg_df['ex_max_cum_return'] - 1
+    # calculate daily return 
+    agg_p['return'] = agg_p['total_cap'].pct_change()
 
-    return agg_df
+    # calculate accumulative return
+    agg_p['cum_pnl'] = agg_p['total_cap'].diff()
+
+    # accumulative pnl
+    agg_p['cum_return'] = agg_p['cum_pnl'] \
+        / (agg_p.loc[0, 'cash'] + agg_p.loc[0, 'rest_cap'])
+    
+    # calculate benchmark return
+    agg_b['cum_return'] = (agg_b['return'] + 1).cumprod() - 1
+
+    # merge 
+    merged_df = pd.merge(
+        agg_p, agg_b, on=['period'], how='outer', suffixes=('_p', '_b'))
+    merged_df.sort_values('period', inplace=True)
+
+    # active return
+    merged_df['active_return'] = merged_df['return_p'] - merged_df['return_b']
+
+    # pnl max draw down
+    calculate_max_draw_down(merged_df, 'cum_pnl')
+
+    # active return max draw down
+    calculate_max_draw_down(merged_df, 'active_return')
+
+    # total capital max draw down
+    calculate_max_draw_down(merged_df, 'total_cap')
+
+    return merged_df
 
 
 def get_portfolio_anlaysis(analytic_p, analytic_b):
@@ -818,46 +877,53 @@ def get_portfolio_anlaysis(analytic_p, analytic_b):
 
     used by the portfolio summary component
     '''
-    # aggregate to daily
-    agg_p = agg_to_daily(analytic_p)
-    agg_b = agg_to_daily(analytic_b)
 
-    # first ts entry should have 0 as return
-    agg_p.sort_values(by=['period'], inplace=True)
-    agg_b.sort_values(by=['period'], inplace=True)
-    agg_p.loc[0, 'return'] = 0
-    agg_b.loc[0, 'return'] = 0
-
+    # aggregate by exact time
+    analytic_p = analytic_p.groupby('time')\
+        .agg({'cash': 'sum', 'rest_cap': 'first', 'return': 'sum', 'pnl': 'sum'})\
+        .reset_index()
+    analytic_b = analytic_b.groupby('time')\
+        .agg({'return': 'sum'})\
+        .reset_index()
+    
+    # first ts entry should have 0 as return and pnl
+    analytic_p = analytic_p.sort_values(by=['time'])
+    analytic_b = analytic_b.sort_values(by=['time'])
+    analytic_p.iloc[0, analytic_p.columns.get_loc('return')] = 0
+    analytic_b.iloc[0, analytic_b.columns.get_loc('return')] = 0
+    analytic_p.iloc[0, analytic_p.columns.get_loc('pnl')] = 0
 
     # total capital
-    agg_p['total_cap'] = agg_p['cash'] + agg_p['rest_cap']
+    analytic_p['total_cap'] = analytic_p['cash'] + analytic_p['rest_cap']
 
-    # return using pct change of total_cap
-    # agg_p['return'] = agg_p['total_cap'].pct_change()
-
-    # calculate accumulative pnl
-    agg_p['cum_pnl'] = agg_p['pnl'].cumsum()
-
-    # using accumulative pnl to calculate
-    agg_p['cum_return'] = agg_p['cum_pnl'] / (agg_p.loc[0, 'cash'] + agg_p.loc[0, 'rest_cap'])
-
+    # calculate accumulative pnl using total capital
+    analytic_p['pnl'] = analytic_p.total_cap.diff()
+    # using accumulative pnl to calculate return
+    analytic_p['cum_pnl'] = analytic_p['pnl'].cumsum()
+    # cumulative return using pnl
+    analytic_p['cum_return'] = analytic_p['cum_pnl'] / analytic_p.loc[0, 'total_cap']
     # accumulative return vgb
-    agg_b['cum_return'] = (agg_b['return'] + 1).cumprod() - 1
-    
+    analytic_b['cum_return'] = (analytic_b['return'] + 1).cumprod() - 1
+
 
     # merge
     merged_df = pd.merge(
-        agg_p, agg_b, on=['period'], how='outer', suffixes=('_p', '_b'))
-    merged_df.sort_values('period', inplace=True)
+        analytic_p, analytic_b, on=['time'], how='outer', suffixes=('_p', '_b'))
+    merged_df.sort_values('time', inplace=True)
 
-    # risk, using population deviation
-    merged_df['risk'] = merged_df['return_p'].expanding(min_periods=1).std() * math.sqrt(252)
+    # forward fill the benmark return and cum return
+    merged_df['return_b'].fillna(method='ffill', inplace=True)
+    merged_df['cum_return_b'].fillna(method='ffill', inplace=True)
+
+    # risk, using population deviation and normalized by sqrt(252)
+    merged_df['risk'] = merged_df['return_p'].expanding(
+        min_periods=1).std() * math.sqrt(252)
 
     # active return
     merged_df['active_return'] = merged_df['return_p'] - merged_df['return_b']
+
     # tracking error
     merged_df['tracking_error'] = merged_df['active_return']\
         .expanding(min_periods=1).std() * math.sqrt(252)
-
 
     return merged_df

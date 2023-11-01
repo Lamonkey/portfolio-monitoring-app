@@ -296,15 +296,48 @@ def add_new_portfolio(portfolio_df, override=True):
             if len(df) != 0 and not override:
                 raise Exception(
                     f'Portfolio already exist for date {portfolio_df.date[0]}')
-            
+
             # delete the duplicate if override is true
             elif len(df) != 0 and override:
                 query = f"DELETE FROM {ts.PORTFOLIO_TABLE} WHERE DATE(date) = DATE('{portfolio_df.date[0]}')"
                 conn.execute(text(query))
                 conn.commit()
 
-        # append to db 
-        _append_df_to_db(portfolio_df, ts.PORTFOLIO_TABLE, ts.PORTFOLIO_TABLE_SCHEMA)
+        # append to db
+        _append_df_to_db(portfolio_df, ts.PORTFOLIO_TABLE,
+                         ts.PORTFOLIO_TABLE_SCHEMA)
 
     except Exception as e:
         raise e
+
+
+def update_user_info(df):
+    try:
+        with create_engine(db_url).connect() as conn:
+            if (not _validate_schema(df, ts.USER_TABLE_SCHEMA)):
+                raise ValueError(
+                    'uploaded user_df has different schema than USER_TABLE_SCHEMA')
+            
+            # no empty column
+            if df.isnull().values.any():
+                raise ValueError('user_df has empty column')
+            
+            # no empty string
+            if df.eq('').any().any():
+                raise ValueError('user_df has empty string')
+            
+            df.to_sql(ts.USER_TABLE, con=conn,
+                      if_exists='replace', index=False)
+    except Exception as e:
+        print(e)
+        raise Exception('Error updating user table')
+
+
+def get_all_user_info():
+    try:
+        with create_engine(db_url).connect() as conn:
+            df = pd.read_sql(ts.USER_TABLE, con=conn)
+            return df
+    except Exception as e:
+        print(e)
+        raise Exception('Error getting user table')
