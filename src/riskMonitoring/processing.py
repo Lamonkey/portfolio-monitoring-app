@@ -281,22 +281,22 @@ def calculate_total_attribution(calculated_p_stock, calculated_b_stock):
     # return df
 
 
-def calcualte_return(df: pd.DataFrame, start, end):
-    '''
-    calcualte return within a window for each entry of ticker
-    inclusive
+# def calculate_cum_return_rate(df: pd.DataFrame):
+#     '''
+#     calcualte return within a window for each entry of ticker
+#     inclusive
 
-    this is an intermediate step to calculate attribute
-    calculation using the weighted_log_return
-    '''
-    df = df[(df.time >= start) & (df.time <= end)].copy()
-    df.sort_values(by=['time'], inplace=True)
+#     Parameters
+#     ----------
+#     df : dataframe
+#         sorted dafaframe 
+#     '''
+   
+#     # cum return
+#     df['cum_return'] = df.groupby('ticker')['pct'].apply(
+#         lambda x: (1 + x).cumprod() - 1).reset_index(level=0, drop=True)
 
-    # cum return
-    df['cum_return'] = df.groupby('ticker')['pct'].apply(
-        lambda x: (1 + x).cumprod() - 1).reset_index(level=0, drop=True)
-
-    return df
+#     return df
 
 
 def _uniformize_time_series(profile_df):
@@ -471,7 +471,6 @@ def calculate_attributes_between_dates(start, end, calculated_p_stock, calculate
         df.pct_p - df.prev_w_in_p_b * df.pct_b
 
     return df
-
 
 def calculate_cum_pnl(df: pd.DataFrame):
     '''return df with cumulative pnl within a window
