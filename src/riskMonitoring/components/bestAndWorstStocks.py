@@ -3,9 +3,13 @@ from datetime import timedelta
 import panel as pn
 from panel.viewable import Viewer
 import param
+from riskMonitoring import utils
 
 
 class Component(Viewer):
+    '''
+    Display a tabulator to display best and worst stocks in a time window
+    '''
     start_date = param.Parameter()
     end_date = param.Parameter()
     hidden_col = [
@@ -66,9 +70,10 @@ class Component(Viewer):
         '''
         calculate attributes and return a sorted dataframe on weighted return
         '''
-        df = processing.calculate_cum_pnl(self.analytic_df,
-                                          start=self.start_date,
-                                          end=self.end_date)
+        selected_df = utils.clip_df(df=self.analytic_df,
+                                    start=self.start_date,
+                                    end=self.end_date)
+        df = processing.calculate_cum_pnl(selected_df)
         df = self._get_cum_return(df)
         return df.sort_values(by='cum_pnl', ascending=False)
 
@@ -110,4 +115,3 @@ class Component(Viewer):
 
         )
         return self._layout
-

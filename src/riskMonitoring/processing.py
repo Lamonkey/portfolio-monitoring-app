@@ -473,10 +473,13 @@ def calculate_attributes_between_dates(start, end, calculated_p_stock, calculate
     return df
 
 
-def calculate_cum_pnl(df, start, end):
-    '''return df with cumulative pnl within a window'''
-    df = df[df.time.between(start, end, inclusive='both')].copy()
-    df.sort_values(by=['time'], inplace=True)
+def calculate_cum_pnl(df: pd.DataFrame):
+    '''return df with cumulative pnl within a window
+    Parameters
+    ----------
+    df : dataframe
+       sorted dataframe on time with ticker and pnl collumn
+    '''
     grouped = df.groupby('ticker')
     df['cum_pnl'] = grouped['pnl'].cumsum()
     return df
