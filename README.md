@@ -1,3 +1,4 @@
+[![Docker Image CI](https://github.com/Lamonkey/portfolio-monitoring-app/actions/workflows/main.yml/badge.svg?branch=main&event=push)](https://github.com/Lamonkey/portfolio-monitoring-app/actions/workflows/main.yml)
 # Portfolio monitoring app
 
 A web application to monitor portfolio's performance
