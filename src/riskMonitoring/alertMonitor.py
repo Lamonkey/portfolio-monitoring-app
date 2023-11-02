@@ -1,5 +1,44 @@
 from riskMonitoring import db_operation as db
 from riskMonitoring import processing
+class DD():
+    '''
+    alert when portfolio has max draw down over threshold
+    '''
+    def __init__(self, **param):
+        self.threshold = param['threshold']
+        self.title = f'⚠️ 日撤超过 {self.threshold:.2%}'
+        self.columns = [
+            'time_p',
+            'total_cap',
+            'total_cap_drawdown',
+        ]
+        self.col_2_name = {
+            'time_p': '记录日期',
+            'total_cap': '总资产',
+            'total_cap_drawdown': '当日回撤',
+        }
+
+    def run(self):
+        analytic_p = db.get_portfolio_analytic_df()
+        analytic_b = db.get_portfolio_analytic_df()
+        mdd_df = processing.get_draw_down(analytic_p, analytic_b)
+        
+        # keep row with max time
+        self.result = mdd_df[mdd_df.period == mdd_df.period.max()]
+        self.result = self.result[self.result.total_cap_drawdown < self.threshold]
+        # check mdd of total capital exceed threshold
+        return self.result['total_cap_drawdown'] < self.threshold
+
+    def get_result(self):
+        if self.result is None:
+            raise ValueError('run method must be called first')
+        formatted = self.result[self.columns].copy()
+        formatted['total_cap_drawdown'] = formatted['total_cap_drawdown'].apply(
+            lambda x: f'{x:.2%}')
+        formatted['total_cap'] = formatted['total_cap'].apply(
+            lambda x: f'{format(x, ",")} ¥')
+        formatted = formatted.rename(columns=self.col_2_name)
+        return formatted
 class MDD():
     '''
     alert when portfolio has max draw down over threshold

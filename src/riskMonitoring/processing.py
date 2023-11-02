@@ -815,6 +815,7 @@ def calculate_max_draw_down(df, on):
     # Find the maximum drawdown and the corresponding date for each day
     max_drawdown = tmp_df['drawdown'].cummin()
     df[f'{on}_max_drawdown'] = max_drawdown
+    df[f'{on}_drawdown'] = tmp_df['drawdown']
 
 
 def get_draw_down(analytic_p, analytic_b):
