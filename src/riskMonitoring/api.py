@@ -14,8 +14,8 @@ from tqdm import tqdm
 import riskMonitoring.db_operation as db
 
 load_dotenv()
-user_name = os.environ.get('JQDATA_USER')
-password = os.environ.get('JQDATA_PASSWORD')
+user_name = os.getenv('JQDATA_USER')
+password = os.getenv('JQDATA_PASSWORD')
 
 
 def auth_api(func):
