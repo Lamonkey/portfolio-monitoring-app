@@ -881,7 +881,7 @@ def get_portfolio_anlaysis(analytic_p, analytic_b):
 
     # aggregate by exact time
     analytic_p = analytic_p.groupby('time')\
-        .agg({'cash': 'sum', 'rest_cap': 'first', 'return': 'sum', 'pnl': 'sum'})\
+        .agg({'cash': 'sum', 'rest_cap': 'first', 'pnl': 'sum'})\
         .reset_index()
     analytic_b = analytic_b.groupby('time')\
         .agg({'return': 'sum'})\
@@ -890,9 +890,9 @@ def get_portfolio_anlaysis(analytic_p, analytic_b):
     # first ts entry should have 0 as return and pnl
     analytic_p = analytic_p.sort_values(by=['time'])
     analytic_b = analytic_b.sort_values(by=['time'])
-    analytic_p.iloc[0, analytic_p.columns.get_loc('return')] = 0
-    analytic_b.iloc[0, analytic_b.columns.get_loc('return')] = 0
-    analytic_p.iloc[0, analytic_p.columns.get_loc('pnl')] = 0
+    # analytic_p.iloc[0, analytic_p.columns.get_loc('return')] = 0
+    # analytic_b.iloc[0, analytic_b.columns.get_loc('return')] = 0
+    # analytic_p.iloc[0, analytic_p.columns.get_loc('pnl')] = 0
 
     # total capital
     analytic_p['total_cap'] = analytic_p['cash'] + analytic_p['rest_cap']
@@ -903,9 +903,15 @@ def get_portfolio_anlaysis(analytic_p, analytic_b):
     analytic_p['cum_pnl'] = analytic_p['pnl'].cumsum()
     # cumulative return using pnl
     analytic_p['cum_return'] = analytic_p['cum_pnl'] / analytic_p.loc[0, 'total_cap']
+    # use cum_return caculate return
+    analytic_p['return'] = (analytic_p['cum_return'] + 1).pct_change()
     # accumulative return vgb
     analytic_b['cum_return'] = (analytic_b['return'] + 1).cumprod() - 1
-
+    
+    # first ts entry should have 0 as return and pnl
+    analytic_p.iloc[0, analytic_p.columns.get_loc('return')] = 0
+    analytic_b.iloc[0, analytic_b.columns.get_loc('return')] = 0
+    analytic_p.iloc[0, analytic_p.columns.get_loc('pnl')] = 0
 
     # merge
     merged_df = pd.merge(
