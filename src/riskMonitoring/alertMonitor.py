@@ -1,5 +1,48 @@
 from riskMonitoring import db_operation as db
 from riskMonitoring import processing
+
+class CumReturn():
+    def __init__(self, **param):
+        self.threshold = param['threshold']
+        self.title = f'⚠️ 累计回报超过 {self.threshold:.2%}'
+        self.columns = [
+            'time',
+            'total_cap',
+            'cum_return_p',
+            'cum_return_b'
+        ]
+        self.col_2_name = {
+            'time': '记录日期',
+            'total_cap': '总资产',
+            'cum_return_p': '组合累计回报',
+            'cum_return_b': '基准累计回报'
+        }
+
+    def get_result(self):
+        if self.result is None:
+            raise ValueError('run method must be called first')
+        formatted = self.result[self.columns].copy()
+        formatted['cum_return_p'] = formatted['cum_return_p'].apply(
+            lambda x: f'{x:.2%}')
+        formatted['cum_return_b'] = formatted['cum_return_b'].apply(
+            lambda x: f'{x:.2%}')
+        formatted['total_cap'] = formatted['total_cap'].apply(
+            lambda x: f'{format(x, ",")} ¥')
+        
+        return formatted
+    
+    def run(self):
+        analytic_p = db.get_portfolio_analytic_df()
+        analytic_b = db.get_portfolio_analytic_df()
+        processed_df = processing.get_portfolio_anlaysis(
+            analytic_p=analytic_p,
+            analytic_b=analytic_b
+            )
+        # keep the most recent
+        self.result = processed_df[processed_df.time == processed_df.time.max()]
+        
+        return self.result['cum_return_p'] < self.threshold
+        
 class DD():
     '''
     alert when portfolio has max draw down over threshold
