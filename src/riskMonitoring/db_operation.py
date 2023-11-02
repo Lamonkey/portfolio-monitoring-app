@@ -74,16 +74,6 @@ def get_most_recent_benchmark_profile():
     return _get_most_recent(ts.BENCHMARK_TABLE)
 
 
-def get_most_recent_profile(type):
-    table_name = 'benchmark_profile' if type == 'benchmark' else 'portfolio_profile'
-    query = f"SELECT * FROM {table_name} WHERE date = (SELECT MAX(date) FROM {table_name})"
-    with create_engine(db_url).connect() as conn:
-        df = pd.read_sql(query, con=conn)
-        # convert date to datetime object
-        df['date'] = pd.to_datetime(df['date'])
-        return df
-
-
 def _get_oldest(table_name, ts_column='date'):
     query = f"SELECT * FROM {table_name} WHERE {ts_column} = (SELECT MIN({ts_column}) FROM {table_name})"
     with create_engine(db_url).connect() as conn:
@@ -102,13 +92,14 @@ def get_oldest_portfolio_profile():
     return df
 
 
-def get_oldest_stocks_proce():
-    df = _get_oldest(ts.STOCKS_PRICE_TABLE, ts_column='time')
+def get_oldest_benchmark_profile():
+    df = _get_oldest(ts.BENCHMARK_TABLE)
     return df
 
 
-def get_oldest_benchmark_profile():
-    df = _get_oldest(ts.BENCHMARK_TABLE)
+def get_most_recent_analytic_p():
+    table_name = 'analytic_p'
+    df = _get_most_recent(table_name, ts_column='time')
     return df
 
 
@@ -216,12 +207,6 @@ def save_analytic_df(df):
     with create_engine(db_url).connect() as conn:
         df.to_sql(table_name, con=conn, if_exists='replace', index=False)
 
-
-def get_analytic_df():
-    table_name = 'analytic'
-    with create_engine(db_url).connect() as conn:
-        df = pd.read_sql(table_name, con=conn)
-        return df
 
 
 def _get_all_row(table_name, ts_column='date'):
