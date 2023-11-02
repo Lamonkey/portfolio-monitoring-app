@@ -1,6 +1,47 @@
 from riskMonitoring import db_operation as db
 from riskMonitoring import processing
 
+class DailyReturn():
+    def __init__(self, **param):
+        self.threshold = param['threshold']
+        self.title = f'⚠️ 日回报低于 {self.threshold:.2%}'
+        self.columns = [
+            'time',
+            'total_cap',
+            'return_p',
+            'return_b'
+        ]
+        self.col_2_name = {
+            'time': '记录日期',
+            'total_cap': '总资产',
+            'return_p': '组合累计回报',
+            'return_b': '基准累计回报'
+        }
+
+    def get_result(self):
+        if self.result is None:
+            raise ValueError('run method must be called first')
+        formatted = self.result[self.columns].copy()
+        formatted['return_p'] = formatted['return_p'].apply(
+            lambda x: f'{x:.2%}')
+        formatted['return_b'] = formatted['return_b'].apply(
+            lambda x: f'{x:.2%}')
+        formatted['total_cap'] = formatted['total_cap'].apply(
+            lambda x: f'{format(x, ",")} ¥')
+        
+        return formatted
+    
+    def run(self):
+        analytic_p = db.get_portfolio_analytic_df()
+        analytic_b = db.get_portfolio_analytic_df()
+        processed_df = processing.get_portfolio_anlaysis(
+            analytic_p=analytic_p,
+            analytic_b=analytic_b
+            )
+        # keep the most recent
+        self.result = processed_df[processed_df.time == processed_df.time.max()]
+        
+        return self.result['return_p'] < self.threshold
 class CumReturn():
     def __init__(self, **param):
         self.threshold = param['threshold']
@@ -28,7 +69,7 @@ class CumReturn():
             lambda x: f'{x:.2%}')
         formatted['total_cap'] = formatted['total_cap'].apply(
             lambda x: f'{format(x, ",")} ¥')
-        
+        formatted = formatted.rename(columns=self.col_2_name)
         return formatted
     
     def run(self):
@@ -80,6 +121,7 @@ class DD():
             lambda x: f'{x:.2%}')
         formatted['total_cap'] = formatted['total_cap'].apply(
             lambda x: f'{format(x, ",")} ¥')
+        
         formatted = formatted.rename(columns=self.col_2_name)
         return formatted
 class MDD():
