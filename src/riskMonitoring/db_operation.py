@@ -220,7 +220,7 @@ def get_all_stocks_price():
     '''
     return all entries in stocks price table
     '''
-    return _get_all_row(ts.STOCKS_PRICE_TABLE)
+    return _get_all_row(ts.STOCKS_PRICE_TABLE, ts_column='time')
 
 
 def get_stocks_price(tickers: list[str]):
