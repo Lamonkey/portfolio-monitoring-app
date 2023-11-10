@@ -898,7 +898,7 @@ def get_portfolio_anlaysis(analytic_p, analytic_b):
     analytic_p['total_cap'] = analytic_p['cash'] + analytic_p['rest_cap']
 
     # calculate accumulative pnl using total capital
-    analytic_p['pnl'] = analytic_p.total_cap.diff()
+    analytic_p['pnl'] = analytic_p.total_cap.diff().fillna(0)
     # using accumulative pnl to calculate return
     analytic_p['cum_pnl'] = analytic_p['pnl'].cumsum()
     # cumulative return using pnl
@@ -911,7 +911,7 @@ def get_portfolio_anlaysis(analytic_p, analytic_b):
     # first ts entry should have 0 as return and pnl
     analytic_p.iloc[0, analytic_p.columns.get_loc('return')] = 0
     analytic_b.iloc[0, analytic_b.columns.get_loc('return')] = 0
-    analytic_p.iloc[0, analytic_p.columns.get_loc('pnl')] = 0
+
 
     # merge
     merged_df = pd.merge(
@@ -921,6 +921,10 @@ def get_portfolio_anlaysis(analytic_p, analytic_b):
     # forward fill the benmark return and cum return
     merged_df['return_b'].fillna(method='ffill', inplace=True)
     merged_df['cum_return_b'].fillna(method='ffill', inplace=True)
+
+    # first ts entry should have 0 as return and pnl
+    merged_df.iloc[0, merged_df.columns.get_loc('return_b')] = 0
+    merged_df.iloc[0, merged_df.columns.get_loc('cum_return_b')] = 0
 
     # risk, using population deviation and normalized by sqrt(252)
     merged_df['risk'] = merged_df['return_p'].expanding(

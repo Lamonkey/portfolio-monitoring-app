@@ -70,7 +70,7 @@ class Component(Viewer):
         df.period = df.period.dt.strftime('%Y-%m-%d')
         ending_unit = "¥" if on == 'cum_pnl' else "%"
         fig = px.line(df, x='period', y=[
-                      f'{on}_max_drawdown'], custom_data=[on, 'period'])
+                      f'{on}_max_drawdown', f'{on}_drawdown'], custom_data=[on, 'period'])
 
         fig.update_traces(styling.line_plot_trace)
         hover_title = "累计回报率最大回撤" if on == 'cum_return' else "累计pnl最大回撤"

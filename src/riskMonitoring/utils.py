@@ -6,6 +6,9 @@ from riskMonitoring import db_operation as db
 from sqlalchemy import create_engine
 import os
 import json
+from riskMonitoring import settings
+from typing import List, Dict, Any
+
 
 def clip_df(start, df: pd.DataFrame, on='time', end=None):
     '''
@@ -358,13 +361,13 @@ def create_profile_from_json(json_data, use_ave_price=True):
     df['date'] = pd.to_datetime(df['date'])
     all_stock_info = db.get_all_stocks_infos()
 
-    # convert ticker to jq format 
+    # convert ticker to jq format
     df['ticker'] = df.ticker.str.lower()
 
     # check if all ends in sz or sh
     if not df['ticker'].str.endswith(('.sz', '.sh', '.xshg', '.xshe')).all():
         raise Exception('All ticker should end with .SZ, .SH or .XSHG, .XSHE ')
-    
+
     # replace suffix to jq format
     df['ticker'] = df.ticker.str.replace(
         r'\.(sz|sh)$', lambda m: '.XSHE' if m.group() == '.sz' else '.XSHG', regex=True)
@@ -379,15 +382,17 @@ def create_profile_from_json(json_data, use_ave_price=True):
     # calculate weight using ave_price
     df['cash'] = df['ave_price'] * df['shares']
     df['weight'] = df['cash'] / df['cash'].sum()
-    # drop start_date, end_date, type 
+    # drop start_date, end_date, type
     df.drop(columns=['start_date', 'end_date', 'type'], inplace=True)
     return df
+
 
 def update_credential_file():
     # current path
     current_path = os.path.dirname(os.path.abspath(__file__))
     # credential path
-    credential_path = os.path.join(current_path, "../..", 'instance', 'credential.json')
+    credential_path = os.path.join(
+        current_path, "../..", 'instance', 'credential.json')
     # load all user info
     user_info = db.get_all_user_info()
     # get username and password as dictioanry
@@ -396,3 +401,16 @@ def update_credential_file():
     with open(credential_path, 'w') as f:
         json.dump(credentail, f)
 
+
+def save_monitor_config_json(config: List[Dict[str, Any]]):
+    path = os.path.join(settings.INSTANCT_FOLDER_PATH, 'monitor_config.json')
+    with open(path, 'w') as f:
+        json.dump(config, f)
+
+
+def load_monitor_config_json() -> Dict[str, Any]:
+    path = os.path.join(settings.INSTANCT_FOLDER_PATH, 'monitor_config.json')
+    if not os.path.exists(path):
+        return {}
+    with open(path, 'r') as f:
+        return json.load(f)

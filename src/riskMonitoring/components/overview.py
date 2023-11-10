@@ -36,6 +36,7 @@ class Component(Viewer):
         )]
         active_return = most_recent_row.cum_return_p - most_recent_row.cum_return_b
         tracking_error = most_recent_row.tracking_error
+        cum_return_b = most_recent_row.cum_return_b
         total_return = most_recent_row.cum_return_p
         cum_pnl = most_recent_row.cum_pnl
         risk = most_recent_row.risk
@@ -129,6 +130,10 @@ class Component(Viewer):
     <div>
         <h2 style="margin: 0;">¥{round(cum_pnl,2)}</h2>
         <h2 style='color: {self.get_color(total_return)}; margin: 0;'>{self.format_number(total_return)}</h2>
+    </div>
+    <div>
+        <p style="margin: 0;">基准总回报率</p>
+        <p style='color: {self.get_color(cum_return_b)}; margin: 0;'>{self.format_number(cum_return_b)}</p>
     </div>
     <div>
         <p style="margin: 0;">追踪误差</p>

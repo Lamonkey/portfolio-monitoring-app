@@ -1,3 +1,7 @@
+'''
+hostig alert monitor class
+
+'''
 from riskMonitoring import db_operation as db
 from riskMonitoring import processing
 

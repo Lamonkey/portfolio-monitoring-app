@@ -298,6 +298,7 @@ def handle_portfolio_update():
     print('done processing')
 
 
+
 async def daily_update():
     '''
     left and right fill stock price and benchmark weight based on portfolio
@@ -321,6 +322,9 @@ async def daily_update():
     print("updated stocks details")
     log.update_log('daily_update')
     batch_processing()
+
+    # watch event and trigger
+
     print("updated analytic")
 
 
