@@ -1,14 +1,16 @@
-import hvplot.pandas
 import numpy as np
 import panel as pn
-import pandas as pd
 from riskMonitoring.components import sidebar
 from typing import Dict
 from riskMonitoring.utils import (update_credential_file)
 import pandas as pd
-
+import os
 import inspect
 import importlib
+import riskMonitoring.utils as utils
+
+import param
+from panel.viewable import Viewer
 
 from riskMonitoring.db_operation import (
     update_user_info,
@@ -17,21 +19,78 @@ from riskMonitoring.db_operation import (
 xs = np.linspace(0, np.pi)
 
 
-def createMonitorManger(**params):
-    # Assuming your module is named "monitor.py"
-    module_name = "riskMonitoring.alertMonitor"
-    module = importlib.import_module(module_name)
+class MonitorManger(Viewer):
 
-    # Get all classes defined in the module
-    monitor_and_value = {name: cls for name,
-                         cls in inspect.getmembers(module, inspect.isclass)}
-    print(monitor_and_value)
-    # Get the names of the classes
-    # class_names = [cls.__name__ for cls in classes]
+    def __init__(self, **params):
+        # load current config
+        self.config = utils.load_monitor_config_json()
+        self.load_monitor_module()
+        self.multi_choice = pn.widgets.MultiChoice(
+            name='Active Alert Module', value=[], options=[], sizing_mode='stretch_width')
+        self.save_btn = pn.widgets.Button(name="Save")
+        self.test_btn = pn.widgets.Button(name="Test alert")
+        self.save_btn.on_click(self.handle_save)
+        self.test_btn.on_click(self.handle_test)
+        self.testing_email = []
+        self.param_column = pn.Column(sizing_mode='stretch_width', scroll=True)
+        self.update_muti_select()
+        super().__init__(**params)
 
-    multi_choice = pn.widgets.MultiChoice(name='MultiSelect', value=[],
-                                          options=list(monitor_and_value.keys()))
-    return pn.Column(multi_choice, height=200)
+    def load_monitor_module(self):
+        '''
+        load monitor module from riskMonitoring.alertMonitor
+        '''
+        self.module_name = "riskMonitoring.alertMonitor"
+        self.module = importlib.import_module(self.module_name)
+        self.monitor_and_value = {name: cls for name,
+                                  cls in inspect.getmembers(self.module, inspect.isclass)}
+
+
+    def update_muti_select(self):
+        '''
+        update the multi_choice 
+        '''
+        self.multi_choice.options = list(self.monitor_and_value.keys())
+        self.multi_choice.value = list([config['name'] for config in self.config])
+
+    @param.depends('multi_choice.value', watch=True)
+    def sync(self):
+        '''
+        sync between the multi_choice and param_column
+        '''
+        for monitor in self.config:
+            name = list(monitor.keys())[0]
+            value = list(monitor.values())[0]
+            # text_filed
+            tf = pn.widgets.TextInput(name=name, value=str(
+                value), placeholder=f'param for {name}', sizing_mode='stretch_width')
+            self.param_column.append(tf)
+            self.multi_choice.value.append(name)
+
+        
+    def handle_save(self, _):
+        selected_monitors = self.multi_choice.value
+        monitor_config = [
+            {'name': name, 'param': 1 } for name in selected_monitors
+        ]
+        utils.save_monitor_config_json(monitor_config)
+
+    def handle_test(self, _):
+        print("testing alert...")
+        pass
+
+    def __panel__(self):
+        self._layout = pn.Column(
+            self.multi_choice,
+            pn.Row(
+                self.save_btn,
+                self.test_btn,
+                sizing_mode='stretch_width',
+            ),
+            self.param_column,
+            sizing_mode='stretch_width',
+        )
+        return self._layout
 
 
 def createUserCredentialManager(**params):
@@ -97,7 +156,7 @@ template = pn.template.ReactTemplate(
 )
 # Populate the main area with plots, to demonstrate the grid-like API
 template.main[:2, :4] = createUserCredentialManager()
-template.main[:2, 4:5] = createMonitorManger()
+template.main[:4, 4:7] = MonitorManger()
 
 # template.main[:3, 6:] = pn.Card(dfi_cosine.hvplot(**plot_opts).output(), title='Cosine')
 template.servable()

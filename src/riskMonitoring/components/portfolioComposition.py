@@ -129,4 +129,4 @@ class Component(Viewer):
         self.tree_plot.object = tree_plot
 
         # update tabulator
-        self.stock_tabulator.value = selected_df[['display_name','time','shares','pnl']]
+        self.stock_tabulator.value = selected_df[['display_name','time','shares','pnl','weight','cash']]
