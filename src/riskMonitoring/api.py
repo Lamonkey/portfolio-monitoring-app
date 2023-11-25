@@ -271,8 +271,9 @@ def fetch_stocks_price(**params):
     stocks_df.rename(columns={'code': 'ticker'}, inplace=True)
 
     if params.get('frequency') == 'daily' or params.get('frequency') == '1d':
-        # replace time to market close time
-        stocks_df['time'] = stocks_df['time'].apply(lambda x: x.replace(hour=15, minute=0, second=0))
+        if 'time' in stocks_df.columns:
+            # replace time to market close time
+            stocks_df['time'] = stocks_df['time'].apply(lambda x: x.replace(hour=15, minute=0, second=0))
     return stocks_df
 # jq.get_price(security='600673.XSHG', end_date=datetime.now(), frequency='1m', count=1)
 
