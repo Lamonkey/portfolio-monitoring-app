@@ -223,11 +223,14 @@ def get_all_stocks_price():
     return _get_all_row(ts.STOCKS_PRICE_TABLE, ts_column='time')
 
 
-def get_stocks_price(tickers: list[str]):
+def get_stocks_price(tickers: list[str], time=None):
     '''
     return df of stock price within ticker in stocks price table
     '''
-    if len(tickers) == 0:
+    if time is not None:
+        time_str = time.strftime('%Y-%m-%d %H:%M:%S')
+        query = f"SELECT * FROM {ts.STOCKS_PRICE_TABLE} WHERE ticker IN {tuple(tickers)} AND Datetime(time) = Datetime('{time}')"
+    elif len(tickers) == 0:
         # select 0 zero but return df has the same schema
         query = f"SELECT * FROM {ts.STOCKS_PRICE_TABLE} WHERE 1=0"
     elif len(tickers) == 1:
@@ -326,3 +329,5 @@ def get_all_user_info():
     except Exception as e:
         print(e)
         raise Exception('Error getting user table')
+
+    
