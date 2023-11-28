@@ -58,3 +58,14 @@ USER_TABLE_SCHEMA = {
     'password': str,
     'role': str
 }
+
+BENCHMARK_PRICE_TABLE = 'benchmark_price'
+BENCHMARK_PRICE_TABLE_SCHEMA = {
+    'open': float,
+    'close': float,
+    'high': float,
+    'low': float,
+    'volume': float,
+    'money': float,
+    'time': 'datetime64[ns]',
+ }
