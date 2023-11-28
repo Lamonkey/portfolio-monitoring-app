@@ -33,6 +33,9 @@ template = pn.template.ReactTemplate(
 
 analytic_p = db.get_portfolio_analytic_df()
 analytic_b = db.get_benchmark_analytic_df()
+benchmark_price = db.get_benchmark_price_between(
+    analytic_b.time.min(), 
+    analytic_b.time.max())
 
 if len(analytic_p) == 0:
     template.main[0, 6:12] = pn.pane.HTML(
@@ -45,6 +48,7 @@ else:
     min_width = 300
     styles = {'border': '1px solid black', 'padding': '10px'}
     stock_overview = bestAndWorstStocks.Component(
+
         analytic_df=analytic_p,
         styles=styles,
         title="股票表现排名"
@@ -65,6 +69,7 @@ else:
         styles=styles
     )
     total_return_card = overview.Component(
+        benchmark_price = benchmark_price,
         b_stock_df=analytic_b,
         p_stock_df=analytic_p,
         styles=styles,
