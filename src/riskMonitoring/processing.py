@@ -869,23 +869,21 @@ def get_draw_down(analytic_p, analytic_b):
     return merged_df
 
 
-def get_portfolio_anlaysis(analytic_p, analytic_b):
+def get_portfolio_anlaysis(analytic_p, analytic_b, benchmark_df):
     '''
     return df contain daily pnl, daily return, accumulative return
     risk and tracking error of portfolio and benchmark
 
     used by the portfolio summary component
     '''
-    # remove later
-    # load benchmark_df.pkl
-    # current file paht
-    import os
-    # join the path
-    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'benchmark_df.pkl')
-    benchmark_df = pd.read_pickle(path)
-    selected_b_df = benchmark_df[benchmark_df.time_2.between(
+    selected_b_df = benchmark_df[benchmark_df.time.between(
         analytic_p.time.min(), analytic_p.time.max())].copy()
-    selected_b_df['time'] = selected_b_df['time_2']
+    
+    # calculate return of benchmark
+    selected_b_df['pct'] = selected_b_df['close'].pct_change()
+    selected_b_df['return'] = selected_b_df['close'] / \
+        selected_b_df.iloc[0]['close'] - 1
+
     # aggregate by exact time
     analytic_p = analytic_p.groupby('time')\
         .agg({'cash': 'sum', 'rest_cap': 'first', 'pnl': 'sum'})\
