@@ -466,7 +466,10 @@ def app():
             yield {'type': 'info', 'description': "正在更新股票数据", 'duration': 0}
             pipeline.left_fill_stocks_price()
             pipeline.right_fill_stock_price()
-
+            # fill missing benchmark price
+            yield {'type': 'info', 'description': "正在更行index价格", 'duration': 0}
+            pipeline.left_fill_benchmark_price()
+            pipeline.right_fill_benchmark_price()
             # recalculate
             yield {'type': 'info', 'description': "正在重新计算权重", 'duration': 0}
             pipeline.batch_processing()
