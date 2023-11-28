@@ -251,10 +251,13 @@ class Component(Viewer):
     def update(self):
         start = self.date_range_slider.value[0]
         end = self.date_range_slider.value[1]
+        clip_benchmark = utils.clip_df(start=start, end=end, df=self.benchmark_price)
         clip_p = utils.clip_df(start=start, end=end, df=self.p_stock_df)
         clip_b = utils.clip_df(start=start, end=end, df=self.b_stock_df)
         df = processing.get_portfolio_anlaysis(
-            analytic_b=clip_b, analytic_p=clip_p)
+            benchmark_df=clip_benchmark,
+            analytic_b=clip_b,
+            analytic_p=clip_p)
         df['x'] = df['time']
         # df['x'] = df['period'].dt.start_time.dt.q   strftime('%Y-%m-%d')
         self.report.object = self.create_report(df)
@@ -265,9 +268,10 @@ class Component(Viewer):
         self.tracking_error_plot.object = self.create_tracking_error_plot(df)
         self.result_table.value = self.create_raw_data_table(df)
 
-    def __init__(self, b_stock_df, p_stock_df, styles, **params):
+    def __init__(self, benchmark_price, b_stock_df, p_stock_df, styles, **params):
         self.styles = styles
         self.b_stock_df = b_stock_df
+        self.benchmark_price = benchmark_price
         self.p_stock_df = p_stock_df
         self.date_range_slider = pn.widgets.DateRangeSlider(
             start=p_stock_df.time.min(),
