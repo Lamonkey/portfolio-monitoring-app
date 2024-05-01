@@ -29,6 +29,8 @@ class Component(Viewer):
         '''
         create a html report
         '''
+        if df.empty:
+            return "<html><body>No data available.</body></html>"
         # Calculate the risk, tracking error, active return
 
         # use accumulative result from last row
@@ -60,8 +62,8 @@ class Component(Viewer):
             'ticker').weight.shift(1)
 
         # keep only last entry for each ticker
-        last_p = first_last_p.dropna(subset=['pct'])
-        last_b = first_last_b.dropna(subset=['pct'])
+        last_p = first_last_p.dropna(subset=['pct']).copy()
+        last_b = first_last_b.dropna(subset=['pct']).copy()
 
         # combine for calculation
         last_p['in_portfolio'] = True

@@ -928,7 +928,10 @@ def get_portfolio_anlaysis(analytic_p, analytic_b, benchmark_df):
     merged_df['pct'].fillna(0, inplace=True)
     merged_df['close'].fillna(method='bfill', inplace=True)
     merged_df['return_b'] = merged_df['close'].pct_change()
-    merged_df['cum_return_b'] = merged_df['close'] / merged_df.loc[0, 'close'] - 1
+    if not merged_df.empty:
+        merged_df['cum_return_b'] = merged_df['close'] / merged_df.loc[0, 'close'] - 1
+    else:
+        merged_df['cum_return_b'] = pd.Series(dtype=float)
 
     # risk
     merged_df['risk'] = merged_df['return_p'].expanding(
