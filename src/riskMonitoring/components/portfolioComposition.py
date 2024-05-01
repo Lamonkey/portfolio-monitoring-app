@@ -24,21 +24,30 @@ class Component(Viewer):
         self.daily_cap_df = self._calculate_daily_total_capital(
             self.p_stock_df)
 
-        self.date_slider = pn.widgets.DateSlider(name='选择某日资金分布',
-                                                 start=self.p_stock_df.time.min(),
-                                                 end=self.p_stock_df.time.max(),
-                                                 value=self.p_stock_df.time.max(),
-                                                 )
-        self.date_range = pn.widgets.DateRangeSlider(name='选择资金分布走势区间',
-                                                     start=self.p_stock_df.time.min(),
-                                                     end=self.p_stock_df.time.max(),
-                                                     value=(self.p_stock_df.time.min(
-                                                     ), self.p_stock_df.time.max()),
-                                                     )
+        self.date_slider = \
+            pn.widgets.DateSlider(name='选择某日资金分布',
+                                  start=self.p_stock_df.time.min(),
+                                  end=self.p_stock_df.time.max(),
+                                  value=self.p_stock_df.time.max(),
+                                  )
+        self.date_range = \
+            pn.widgets.DateRangeSlider(name='选择资金分布走势区间',
+                                       start=self.p_stock_df.time.min(),
+                                       end=self.p_stock_df.time.max(),
+                                       value=(self.p_stock_df.time.min(
+                                       ), self.p_stock_df.time.max()),
+                                       )
         self.tree_plot = pn.pane.Plotly()
         self.trend_plot = pn.pane.Plotly()
         self.stock_tabulator = pn.widgets.Tabulator(
             layout="fit_data_stretch", width_policy='max')
+
+        self.file_name, self.download_button = self.stock_tabulator\
+            .download_menu(
+                text_kwargs={'name': 'Enter filename', 'value': 'default.csv'},
+                button_kwargs={'name': 'Download table'}
+            )
+
         self.update_treeplot_and_tabulator()
         self.update_trend_plot()
         super().__init__(**params)
@@ -52,12 +61,7 @@ class Component(Viewer):
         agg_df.reset_index(inplace=True)
 
         agg_df['rest_cap'] = agg_df['rest_cap'].fillna(method='ffill')
-        # for index, _ in agg_df.iterrows():
-        #     if index == 0:
-        #         continue
-        #     previous_total_capital = agg_df.at[index - 1, 'total_capital']
-        #     agg_df.loc[index, 'total_capital'] = agg_df.loc[index,
-        #                                                     'pnl'] + previous_total_capital
+
         return agg_df
 
     @param.depends('date_range.value', watch=True)
@@ -105,11 +109,14 @@ class Component(Viewer):
         return fig.to_dict()
 
     def __panel__(self):
+
         self._layout = pn.Column(
             pn.pane.HTML('<h1>Portfolio 组成</h1>'),
             self.date_slider,
             pn.Tabs(('每日权重', self.tree_plot),
-                    ('daily shares', self.stock_tabulator)),
+                    ('每日portfolio detail', pn.Column(self.stock_tabulator,
+                                                     self.file_name,
+                                                     self.download_button))),
             self.date_range,
             self.trend_plot,
             sizing_mode='stretch_both',
