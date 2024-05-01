@@ -298,7 +298,7 @@ def fetch_benchmark_profile(start_date: datetime, end_date: datetime, delta_time
 
     results = []
     with tqdm(total=(end_date - start_date) / delta_time, colour='green', desc='Fetching benchmark') as pbar:
-        while start_date < end_date:
+        while start_date <= end_date:
             try:
                 date_str = start_date.strftime('%Y-%m-%d')
                 result = jq.get_index_weights(benchmark, date=date_str)

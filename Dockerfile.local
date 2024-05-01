@@ -22,3 +22,4 @@ RUN python3 backgroundTask.py
 
 # Start the panel application
 CMD panel serve pages/* --basic-auth /code/instance/credential.json --cookie-secret=${SECRET_COOKIE} --setup backgroundTask.py --address 0.0.0.0 --port 7860 --rest-provider tranquilizer --allow-websocket-origin "*"
+# CMD panel serve pages/* --basic-auth /code/instance/credential.json --cookie-secret=${SECRET_COOKIE} --setup backgroundTask.py --address 0.0.0.0 --port 7860 --allow-websocket-origin "*"

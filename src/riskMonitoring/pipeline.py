@@ -289,17 +289,15 @@ def left_fill_benchmark_price():
     '''
     left fill bechmark price to match the earliest date in stock price table
     '''
-    start = db.get_oldest_stocks_price().time[0]
+    start = db.get_oldest_portfolio_profile().date[0]
     end = db.get_oldest_benchmark_profile().date[0]
 
     if end is None or end is pd.NaT:
         end = utils.time_in_beijing()
-    if start > end:
-        raise Exception(
-            'Error on left fill benchmark price, start date is later than end date')
-    elif start == end:
+
+    if start >= end:
         # no update needed
-        return
+        return 
 
     # minus 1 becuase it is inclusive on both end
     df = api.fetch_benchmark_price(start, end - dt.timedelta(days=1))
