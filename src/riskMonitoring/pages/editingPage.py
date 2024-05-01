@@ -3,7 +3,7 @@
 import panel as pn
 from riskMonitoring.utils import create_stocks_entry_from_excel, style_number, create_share_changes_report, time_in_beijing
 from bokeh.models.widgets.tables import NumberEditor, SelectEditor
-from tranquilizer import tranquilize
+
 import pandas as pd
 import riskMonitoring.api as api
 import riskMonitoring.db_operation as db
@@ -23,7 +23,6 @@ pn.extension(notifications=True)
 MIN_COMPONENT_WIDTH = 375
 MAX_COMPONENT_WIDTH = 600
 
-@tranquilize(method="POST")
 def upload_to_db(data):
     # check if valid json
     try:

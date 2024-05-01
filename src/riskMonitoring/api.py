@@ -307,8 +307,8 @@ def fetch_benchmark_profile(start_date: datetime, end_date: datetime, delta_time
                 print(f'Error when fetching {benchmark}\n\
                                     update on {date_str} is missing\n\
                                     {e}')
+                raise (e)
             start_date += delta_time
-            print(1)
             pbar.update(1)
     update_df = pd.concat(results)
     update_df['ticker'] = update_df.index

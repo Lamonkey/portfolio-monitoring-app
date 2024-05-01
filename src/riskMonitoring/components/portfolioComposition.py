@@ -37,7 +37,8 @@ class Component(Viewer):
                                                      )
         self.tree_plot = pn.pane.Plotly()
         self.trend_plot = pn.pane.Plotly()
-        self.stock_tabulator = pn.widgets.Tabulator(layout="fit_data_stretch",width_policy='max')
+        self.stock_tabulator = pn.widgets.Tabulator(
+            layout="fit_data_stretch", width_policy='max')
         self.update_treeplot_and_tabulator()
         self.update_trend_plot()
         super().__init__(**params)
@@ -107,7 +108,8 @@ class Component(Viewer):
         self._layout = pn.Column(
             pn.pane.HTML('<h1>Portfolio 组成</h1>'),
             self.date_slider,
-            pn.Tabs(('每日权重', self.tree_plot), ('daily shares', self.stock_tabulator)),
+            pn.Tabs(('每日权重', self.tree_plot),
+                    ('daily shares', self.stock_tabulator)),
             self.date_range,
             self.trend_plot,
             sizing_mode='stretch_both',
@@ -129,4 +131,5 @@ class Component(Viewer):
         self.tree_plot.object = tree_plot
 
         # update tabulator
-        self.stock_tabulator.value = selected_df[['display_name','time','shares','pnl','weight','cash']]
+        self.stock_tabulator.value = selected_df[[
+            'display_name', 'time', 'shares', 'pnl', 'weight', 'cash']]
