@@ -69,11 +69,11 @@ else:
         styles=styles
     )
     total_return_card = overview.Component(
-        benchmark_price = benchmark_price,
+        benchmark_price=benchmark_price,
         b_stock_df=analytic_b,
         p_stock_df=analytic_p,
         styles=styles,
-        value=(0, 20))
+        )
     drawdown_card = maxDrawDown.Component(
         calculated_p_stock=analytic_p,
         analytic_b=analytic_b,
@@ -100,9 +100,9 @@ else:
     cum_return_dd = trendPlot.Component(
         title='最大回撤', data_series=foo_df['total_cap_max_drawdown'])
 
-    template.main[0, 0:4] = cum_pnl_trend
-    template.main[0, 4:8] = cum_return_trend
-    template.main[0, 8:12] = cum_return_dd
+    # template.main[0, 0:4] = cum_pnl_trend
+    # template.main[0, 4:8] = cum_return_trend
+    # template.main[0, 8:12] = cum_return_dd
     # first column
     template.main[1:6, 0:4] = total_return_card
     template.main[6:12, 0:4] = return_analysis
@@ -217,7 +217,7 @@ else:
                 stream_btn.button_type = 'danger'
                 print('Started streaming')
         btn = pn.widgets.Button(
-            name='开启stream', button_type='success', size_policy='stretch_width')
+            name='开启stream', button_type='success', sizing_mode='stretch_width')
         btn.on_click(toggle_streaming_callback)
         return btn
 

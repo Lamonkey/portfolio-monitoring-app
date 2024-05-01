@@ -282,11 +282,14 @@ def update_portfolio_profile_to_db(portfolio_df):
     if (_validate_schema(portfolio_df, ts.PORTFOLIO_TABLE_SCHEMA)):
         raise ValueError(
             'uploaded portfolio_df has different schema than PORTFOLIO_DB_SCHEMA')
+    # if no ticker is None
+    if portfolio_df.ticker.isnull().values.any():
+        raise ValueError('portfolio_df has empty ticker column')
     try:
         with create_engine(db_url).connect() as conn:
             portfolio_df[ts.PORTFOLIO_TABLE_SCHEMA.keys()].to_sql(
                 ts.PORTFOLIO_TABLE, con=conn, if_exists='replace', index=False)
-
+    
     except Exception as e:
         print(e)
         raise e

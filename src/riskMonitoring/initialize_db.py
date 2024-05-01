@@ -45,4 +45,4 @@ def initialize_db():
 
 # allow to be run as script
 if __name__ == '__main__':
-    initialize_db()
+    _create_table_with_schema(ts.BENCHMARK_PRICE_TABLE, ts.BENCHMARK_PRICE_TABLE_SCHEMA)

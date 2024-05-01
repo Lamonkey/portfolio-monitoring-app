@@ -315,7 +315,7 @@ class Component(Viewer):
         )
         return self._layout
 
-    @param.depends('_date_range.value', watch=True)
-    def _sync_params(self):
-        self.start_date = self.date_range_slider.value[0]
-        self.end_date = self.date_range_slider.value[1]
+    # @param.depends('_date_range.value', watch=True)
+    # def _sync_params(self):
+    #     self.start_date = self.date_range_slider.value[0]
+    #     self.end_date = self.date_range_slider.value[1]

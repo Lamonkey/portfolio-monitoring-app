@@ -171,7 +171,7 @@ def app():
     # get all stocks ticker for auto fill
     stock_details = db.get_all_stocks_infos()
     all_tickers = stock_details.ticker.to_list()
-
+    
     # get most recent portfolio for auto generate entry
     most_recent_portfolio = None
     if len(p_profile) == 0:

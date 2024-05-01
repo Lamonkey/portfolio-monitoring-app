@@ -641,6 +641,8 @@ def calculate_periodic_BHB(agg_b, agg_p):
 
 
 def select_first_last_stock_within_window(df, start, end):
+    start = datetime.combine(start, datetime.min.time())
+    end = datetime.combine(end, datetime.max.time())
     croped_df = df[df.time.between(start, end, inclusive='both')]
     grouped = croped_df.groupby('ticker')
     first_df = croped_df.loc[grouped.time.idxmin()]
@@ -881,8 +883,9 @@ def get_portfolio_anlaysis(analytic_p, analytic_b, benchmark_df):
     
     # calculate return of benchmark
     selected_b_df['pct'] = selected_b_df['close'].pct_change()
-    selected_b_df['return'] = selected_b_df['close'] / \
-        selected_b_df.iloc[0]['close'] - 1
+    if not selected_b_df.empty:
+        selected_b_df['return'] = selected_b_df['close'] / selected_b_df.iloc[0]['close'] - 1
+        selected_b_df['return'] = pd.Series(dtype=float)
 
     # aggregate by exact time
     analytic_p = analytic_p.groupby('time')\
@@ -909,7 +912,10 @@ def get_portfolio_anlaysis(analytic_p, analytic_b, benchmark_df):
     # portfolio return
     # merged_df.iloc[0, merged_df.columns.get_loc('return_p')] = 0
     merged_df['cum_pnl'] = merged_df['pnl'].cumsum()
-    merged_df['cum_return_p'] = merged_df['cum_pnl'] / merged_df.loc[0, 'total_cap']
+    if merged_df.empty:
+        merged_df['cum_return_p'] = pd.Series(dtype=float)
+    else:
+        merged_df['cum_return_p'] = merged_df['cum_pnl'] / merged_df.loc[0, 'total_cap']
     merged_df['return_p'] = (merged_df['cum_return_p'] + 1).pct_change()
     merged_df['return_p'].fillna(0, inplace=True)
 
