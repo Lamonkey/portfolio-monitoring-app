@@ -211,13 +211,14 @@ class Component(Viewer):
     def create_cum_return_plot(self, df):
 
         fig = px.line(df, x='x', y=[
-                      'cum_return_p', 'cum_return_b'])
+                      'cum_return_p', 'cum_return_b', 'norm_cum_return_p'])
         fig.update_traces(mode="lines+markers",
                           marker=dict(size=5), line=dict(width=2))
         fig.update_layout(styling.plot_layout)
         colname_to_name = {
             'cum_return_p': 'Portfolio累计回报率',
-            'cum_return_b': 'benchmark累计回报率'
+            'cum_return_b': 'benchmark累计回报率',
+            'norm_cum_return_p': 'normalized portfolio累计回报率'
         }
         fig.for_each_trace(lambda t: t.update(name=colname_to_name.get(t.name, t.name),
                                               legendgroup=colname_to_name.get(
@@ -228,9 +229,9 @@ class Component(Viewer):
         fig.update_layout(legend_title_text=None)
         return fig.to_dict()
 
-
     def create_risk_plot(self, df):
-        fig = px.line(df.dropna(subset=['risk']), x='x', y=['risk', 'return_p'])
+        fig = px.line(df.dropna(subset=['risk']),
+                      x='x', y=['risk', 'return_p'])
         fig.update_traces(mode="lines+markers",
                           marker=dict(size=5),
                           line=dict(width=2))
@@ -239,31 +240,40 @@ class Component(Viewer):
         return fig.to_dict()
 
     def create_tracking_error_plot(self, df):
-        fig = px.line(df.dropna(subset='tracking_error'), x='x', y=['tracking_error', 'active_return'])
+        fig = px.line(df.dropna(subset='tracking_error'), x='x',
+                      y=['tracking_error', 'active_return'])
         fig.update_traces(mode="lines+markers",
                           marker=dict(size=5),
                           line=dict(width=2))
         fig.update_layout(styling.plot_layout)
         return fig.to_dict()
-    
+
     def create_raw_data_table(self, df):
         return df
-                                
-    @param.depends('date_range_slider.value', 'b_stock_df', 'p_stock_df', watch=True)
+
+    @param.depends('date_range_slider.value',
+                   'b_stock_df',
+                   'p_stock_df',
+                   'sim_ini_cap_input.value',
+                   watch=True)
     def update(self):
         start = self.date_range_slider.value[0]
         end = self.date_range_slider.value[1]
-        clip_benchmark = utils.clip_df(start=start, end=end, df=self.benchmark_price)
+        clip_benchmark = utils.clip_df(
+            start=start, end=end, df=self.benchmark_price)
         clip_p = utils.clip_df(start=start, end=end, df=self.p_stock_df)
         clip_b = utils.clip_df(start=start, end=end, df=self.b_stock_df)
         df = processing.get_portfolio_anlaysis(
             benchmark_df=clip_benchmark,
             analytic_b=clip_b,
             analytic_p=clip_p)
+
+        # normalized accumulative return
+        df['norm_cum_return_p'] = df['cum_pnl'] / self.sim_ini_cap_input.value
         df['x'] = df['time']
         # df['x'] = df['period'].dt.start_time.dt.q   strftime('%Y-%m-%d')
         self.report.object = self.create_report(df)
-        self.return_plot.object = self.create_cum_return_plot(df) 
+        self.return_plot.object = self.create_cum_return_plot(df)
         self.ratio_plot.object = self.create_return_ratio(df)
         self.cum_pnl_plot.object = self.create_cum_pnl_plot(df)
         self.risk_plot.object = self.create_risk_plot(df)
@@ -275,6 +285,13 @@ class Component(Viewer):
         self.b_stock_df = b_stock_df
         self.benchmark_price = benchmark_price
         self.p_stock_df = p_stock_df
+        self.sim_ini_cap_input = pn.widgets.FloatInput(
+            name='模拟初始资金',
+            value=5e5,
+            step=10000,
+            start=0,
+            end=1e6
+        )
         self.date_range_slider = pn.widgets.DateRangeSlider(
             start=p_stock_df.time.min(),
             end=b_stock_df.time.max(),
@@ -286,7 +303,8 @@ class Component(Viewer):
         self.ratio_plot = pn.pane.Plotly()
         self.risk_plot = pn.pane.Plotly()
         self.tracking_error_plot = pn.pane.Plotly()
-        self.result_table = pn.widgets.Tabulator(sizing_mode='stretch_both', pagination='local')
+        self.result_table = pn.widgets.Tabulator(
+            sizing_mode='stretch_both', pagination='local')
         self.report = pn.pane.HTML(sizing_mode='stretch_width')
         self.update()
 
@@ -302,9 +320,8 @@ class Component(Viewer):
             self.date_range_slider,
             self.report,
             pn.Tabs(
+                ('累计回报率', pn.Column(self.sim_ini_cap_input, self.return_plot)),
                 ("累计收益", self.cum_pnl_plot),
-                ('累计回报率', self.return_plot),
-                ('累计回报率比例', self.ratio_plot),
                 ('风险', self.risk_plot),
                 ('追踪误差', self.tracking_error_plot),
                 ('原始数据', self.result_table),
