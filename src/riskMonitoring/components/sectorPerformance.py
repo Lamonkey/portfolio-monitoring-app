@@ -18,18 +18,20 @@ class Component(Viewer):
         self.analytic_b = analytic_b
         self.title = title
         self.styles = styles
+        end_date = analytic_p.time.max().date()
+        start_date = analytic_p.time.min().date()
         self.date_range = pn.widgets.DateRangeSlider(
-            start=analytic_p.time.min(),
-            end=analytic_p.time.max(),
-            value=(analytic_p.time.min(),
-                   analytic_p.time.max())
+            start=start_date,
+            end=end_date,
+            value=(end_date - pd.Timedelta(days=7), end_date)
         )
         self._sync_widgets()
         merged_df = self.processing()
         self.aw_plot = pn.pane.Plotly(self.plot_active_weight(merged_df))
         self.ar_plot = pn.pane.Plotly(self.plot_active_return(merged_df))
         self.cr_plot = pn.pane.Plotly(self.plot_cum_return(merged_df))
-        self.oppo_cost_report = pn.pane.HTML(self.get_oppo_cost_report(merged_df), sizing_mode='stretch_width')
+        self.oppo_cost_report = pn.pane.HTML(
+            self.get_oppo_cost_report(merged_df), sizing_mode='stretch_width')
         super().__init__(**params)
 
     @param.depends('date_range.value', watch=True)
@@ -39,9 +41,11 @@ class Component(Viewer):
 
     def get_oppo_cost_report(self, merged_df):
         merged_df['oppo_cost'] = merged_df.pnl * (1-merged_df['weight_b'] /
-                                                merged_df['weight_p'])
+                                                  merged_df['weight_p'])
         oppo_cost = merged_df.groupby('aggregate_sector')['oppo_cost'].sum()
-        html = '<h1> allocation机遇成本</h1>'
+
+        html = f'<div style="display:flex; justify-content: space-between;">\
+            <h1>allocation机遇成本: </h1> <h1>{round(oppo_cost.sum(),2)}</h1></div>'
         html += '<p> (1-w_b/w_p)*pnl </p>'
         html += '<table style="width:100%; text-align:center">'
         html += '<tr><th>Sector</th><th>Value</th></tr>'
@@ -52,7 +56,7 @@ class Component(Viewer):
 
         html += '</table>'
         return html
-    
+
     def plot_active_weight(self, merged_df):
         fig = px.bar(merged_df, x='period',
                      y='active_weight', color='aggregate_sector',
@@ -145,4 +149,3 @@ class Component(Viewer):
             sizing_mode='stretch_both',
         )
         return self._laytout
-
