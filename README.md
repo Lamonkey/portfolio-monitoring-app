@@ -1,9 +1,9 @@
 [![Docker Image CI](https://github.com/Lamonkey/portfolio-monitoring-app/actions/workflows/main.yml/badge.svg?branch=main&event=push)](https://github.com/Lamonkey/portfolio-monitoring-app/actions/workflows/main.yml)
+
 # Portfolio monitoring app
 
 A web application to monitor portfolio's performance
-<img width="2772" alt="image" src="https://github.com/Lamonkey/portfolio-monitoring-app/assets/10794555/cd94cdfb-f329-41b0-9a13-7716207e42ee">
-
+`<img width="2772" alt="image" src="https://github.com/Lamonkey/portfolio-monitoring-app/assets/10794555/cd94cdfb-f329-41b0-9a13-7716207e42ee">`
 
 # Try it yourself using docker
 
@@ -70,5 +70,5 @@ Then run the app
 
 ```
 cd src
-panel indexPage.py editingPage.py --setup backgroundTask.py
+panel serve pages/* --basic-auth ./credential.json --cookie-secret=${SECRET_COOKIE} --setup backgroundTask.py --address 0.0.0.0 --port 7860 --allow-websocket-origin "*"
 ```
