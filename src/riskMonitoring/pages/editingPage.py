@@ -104,7 +104,6 @@ def create_portfolio_stream_entry(stocks, portfolio_df):
     stream_entry['sync_to_db'] = True
 
     # fill empty ave_price with latest closing price
-    # TODO: for now all ave_price is fetching from api
     ticker = stream_entry.ticker.tolist()
 
     # when not holding any stocks
@@ -369,7 +368,6 @@ def app():
     @notify
     def update_profile_tabulator(e):
         '''add all stocks entry to ui'''
-        # TODO: make this idempotent
         new_entries = [dict(ticker=row[1].value,
                             shares=row[2].value,
                             rest_cap=total_cap_input.value,
