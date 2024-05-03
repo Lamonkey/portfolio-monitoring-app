@@ -137,6 +137,23 @@ class Component(Viewer):
         tree_plot = self.create_treemap(cap_on_date, selected_df)
         self.tree_plot.object = tree_plot
 
+
         # update tabulator
+        '''
+        ['time', 'ticker', 'open', 'close', 'high', 'low', 'volume', 'money',
+       'shares', 'sector', 'aggregate_sector', 'display_name', 'name', 'cash',
+       'rest_cap', 'ini_w', 'ave_price', 'handling_fee', 'weight', 'pct',
+       'return', 'pnl', 'cum_return'],
+        '''
         self.stock_tabulator.value = selected_df[[
-            'display_name', 'time', 'shares', 'pnl', 'weight', 'cash']]
+            'display_name',
+            'ticker',
+            'close',
+            'shares',
+            'weight',
+            'pnl',
+            'cash',
+            'rest_cap',
+            'return',
+            'cum_return',
+            'time']]
