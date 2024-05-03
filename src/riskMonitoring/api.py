@@ -7,8 +7,6 @@ from datetime import datetime, timedelta
 import jqdatasdk as jq
 import pandas as pd
 from typing import List, Optional
-from sqlalchemy import create_engine
-import riskMonitoring.table_schema as ts
 import os
 from tqdm import tqdm
 import riskMonitoring.db_operation as db
@@ -117,7 +115,8 @@ def get_all_stock_info() -> tuple[pd.DataFrame, List[str]]:
 @auth_api
 def add_detail_to_stocks(df: pd.DataFrame) -> List[str]:
     """
-    add display_name, name, sector, and aggregate sector to each stock if not exist already
+    add display_name, name, sector, and aggregate sector to each stock 
+    if not exist already
     return a list of error message
 
     Args: pd.DataFrame
@@ -139,13 +138,15 @@ def add_detail_to_stocks(df: pd.DataFrame) -> List[str]:
             sectors = jq.get_industry(security=not_have_sector)
             df['sector'] = df.apply(lambda x: x.sector if not pd.isna(x.sector)
                                     else " ".join(value['industry_name']
-                                                  for value in sectors[x.ticker].values()), axis=1)
+                                                  for value in
+                                                  sectors[x.ticker].values()),
+                                    axis=1)
             df['aggregate_sector'] = df.apply(
                 lambda x: x.aggregate_sector if not pd.isna(x.aggregate_sector)
                 else aggregate_sector(x.sector), axis=1
             )
         except Exception as e:
-            error.append(f'Error on creaet_sector_information\n{ticker}\n{e}')
+            error.append(f'Error on creaet_sector_information\n{e}')
 
     # display_name and name
     if len(not_have_name) != 0:
@@ -162,7 +163,9 @@ def add_detail_to_stocks(df: pd.DataFrame) -> List[str]:
 
 
 @auth_api
-def update_portfolio_profile(stocks: List[dict], current_p: pd.DataFrame = None) -> tuple[pd.DataFrame, List[str]]:
+def update_portfolio_profile(stocks: List[dict],
+                             current_p: pd.DataFrame = None) \
+        -> tuple[pd.DataFrame, List[str]]:
     """create or update a portfolio profile,
     return a time series of profile
 
@@ -351,3 +354,6 @@ def fetch_benchmark_price(start_date, end_date, frequency='1d'):
     return df
 
 # print(fetch_stocks_price(security=['601077.XSHG','300009.XSHE'],end_date=datetime(2023, 9, 26 ,10, 17), frequency='1m',count=1))
+
+if __name__ == '__main__':
+    print(get_quota())
