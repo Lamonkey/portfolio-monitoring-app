@@ -31,8 +31,7 @@ class DailyReturn():
         formatted['return_b'] = formatted['return_b'].apply(
             lambda x: f'{x:.2%}')
         formatted['total_cap'] = formatted['total_cap'].apply(
-            lambda x: f'{format(x, ",")}– ¥')
-        
+            lambda x: f'{format(x, ",")} ¥')
         return formatted
     
     def run(self):

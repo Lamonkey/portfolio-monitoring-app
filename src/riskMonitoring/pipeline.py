@@ -327,6 +327,7 @@ def handle_portfolio_update():
     print('done processing')
 
 
+
 async def daily_update():
     '''
     left and right fill stock price and benchmark weight based on portfolio

@@ -1,9 +1,9 @@
 [![Docker Image CI](https://github.com/Lamonkey/portfolio-monitoring-app/actions/workflows/main.yml/badge.svg?branch=main&event=push)](https://github.com/Lamonkey/portfolio-monitoring-app/actions/workflows/main.yml)
-
 # Portfolio monitoring app
 
 A web application to monitor portfolio's performance
-`<img width="2772" alt="image" src="https://github.com/Lamonkey/portfolio-monitoring-app/assets/10794555/cd94cdfb-f329-41b0-9a13-7716207e42ee">`
+<img width="2772" alt="image" src="https://github.com/Lamonkey/portfolio-monitoring-app/assets/10794555/cd94cdfb-f329-41b0-9a13-7716207e42ee">
+
 
 # Try it yourself using docker
 

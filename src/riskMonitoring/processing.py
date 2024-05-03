@@ -894,7 +894,7 @@ def get_portfolio_anlaysis(analytic_p, analytic_b, benchmark_df):
     analytic_b = analytic_b.groupby('time')\
         .agg({'return': 'sum'})\
         .reset_index()
-    
+   
     # merge
     # merged_df = pd.merge(
     #     analytic_p, analytic_b, on=['time'], how='outer', suffixes=('_p', '_b'))
@@ -933,7 +933,9 @@ def get_portfolio_anlaysis(analytic_p, analytic_b, benchmark_df):
     else:
         merged_df['cum_return_b'] = pd.Series(dtype=float)
 
+
     # risk
+
     merged_df['risk'] = merged_df['return_p'].expanding(
         min_periods=1).std() * math.sqrt(252)
     # active return

@@ -157,3 +157,4 @@ class Component(Viewer):
             'return',
             'cum_return',
             'time']]
+
