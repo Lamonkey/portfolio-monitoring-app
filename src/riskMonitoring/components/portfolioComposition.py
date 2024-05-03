@@ -40,7 +40,7 @@ class Component(Viewer):
         self.tree_plot = pn.pane.Plotly()
         self.trend_plot = pn.pane.Plotly()
         self.stock_tabulator = pn.widgets.Tabulator(
-            layout="fit_data_stretch", width_policy='max')
+            layout="fit_data_stretch", sizing_mode='stretch_both')
 
         self.file_name, self.download_button = self.stock_tabulator\
             .download_menu(
