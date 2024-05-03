@@ -29,4 +29,6 @@ jobs:
           push: true
           tags: lamonkey/risk-monitor-app:latest
           platforms: linux/amd64,linux/arm64
-
+          build-args: |
+            JQDATA_USER=${{ secrets.JQDATA_USER }}
+            JQDATA_PASSWORD=${{ secrets.JQDATA_PASSWORD }}

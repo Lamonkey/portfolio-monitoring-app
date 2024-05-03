@@ -1,5 +1,8 @@
 FROM python:3.11
 
+# build argument
+ARG JQDATA_USER
+ARG JQDATA_PASSWORD
 # Directory to store the code
 RUN mkdir /code
 
@@ -9,7 +12,7 @@ COPY . /code
 
 # install requirements
 RUN python3 -m pip install --no-cache-dir --upgrade pip
-RUN python3 -m pip install --no-cache-dir --upgrade -r /code/requirements.txt
+RUN python3 -m pip install --no-cache-dir -r /code/requirements.txt
 
 
 # create a folder to store databse if dosn't esit, log and credential.json

@@ -108,7 +108,7 @@ else:
     template.main[6:12, 0:4] = return_analysis
     # second column
     template.main[1:8, 4:8] = composation_card
-    template.main[8:12, 4:8] = sector_performance
+    template.main[8:14, 4:8] = sector_performance
     # template.main[8:12, 4:8] = drawdown_card
 
     # third column
@@ -116,7 +116,7 @@ else:
     template.main[5:8, 8:12] = drawdown_card
 
     # put a spacer at last row cross all columns
-    template.main[-1, 0:12] = pn.Spacer(height=100)
+    template.main[15, 0:12] = pn.layout.HSpacer(height=100)
 
     # calculate max drawdown here
 

@@ -7,10 +7,12 @@
 .DS_Store
 .AppleDouble
 .LSOverride
-
+.conda/*
+.conda
+.mypy_cache/
 # Icon must end with two \r
 Icon
-
+processing_results
 
 # Thumbnails
 ._*
@@ -234,6 +236,5 @@ pyrightconfig.json
 instance/*
 
 ### personal local file
-notebooks/*
-
-src/notebooks
+data
+notebooks
