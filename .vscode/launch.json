@@ -14,5 +14,20 @@
             "console": "integratedTerminal",
             "justMyCode": true
         },
+        {
+            "name": "panel deploy",
+            "type":"python",
+            "request": "launch",
+            "program": "-m",
+            "args": [
+                "panel",
+                 "serve", 
+                 "/Users/lamonkey/Desktop/portfolio-monitoring-app/src/riskMonitoring/pages/*",
+                 " --setup backgroundTask.py",
+                 "--rest-provider tranquilizer",
+                 " --allow-websocket-origin ",
+                 "*"
+            ]
+        }
     ]
 }

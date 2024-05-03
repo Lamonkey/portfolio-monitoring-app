@@ -15,13 +15,13 @@ def clip_df(start, df: pd.DataFrame, on='time', end=None):
     return a copy of df between start and end date inclusive
     '''
     # start of that day
-    start = start.replace(hour=0, minute=0, second=0, microsecond=0)
+    start = datetime.datetime.combine(start, datetime.time(0, 0, 0, 0))
     # end of that day
 
     if end is None:
         return df[df[on] >= start].copy()
     else:
-        end = end.replace(hour=23, minute=59, second=59, microsecond=999999)
+        end = datetime.datetime.combine(end, datetime.time(23, 59, 59, 999999))
         return df[df[on].between(start, end, inclusive='both')].copy()
 
 
@@ -414,3 +414,4 @@ def load_monitor_config_json() -> Dict[str, Any]:
         return {}
     with open(path, 'r') as f:
         return json.load(f)
+

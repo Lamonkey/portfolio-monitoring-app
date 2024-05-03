@@ -127,3 +127,4 @@ class Component(Viewer):
             sizing_mode='stretch_both',
         )
         return self._laytout
+

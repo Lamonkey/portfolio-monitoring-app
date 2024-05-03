@@ -7,8 +7,6 @@ from datetime import datetime, timedelta
 import jqdatasdk as jq
 import pandas as pd
 from typing import List, Optional
-from sqlalchemy import create_engine
-import riskMonitoring.table_schema as ts
 import os
 from tqdm import tqdm
 import riskMonitoring.db_operation as db
@@ -117,7 +115,8 @@ def get_all_stock_info() -> tuple[pd.DataFrame, List[str]]:
 @auth_api
 def add_detail_to_stocks(df: pd.DataFrame) -> List[str]:
     """
-    add display_name, name, sector, and aggregate sector to each stock if not exist already
+    add display_name, name, sector, and aggregate sector to each stock 
+    if not exist already
     return a list of error message
 
     Args: pd.DataFrame
@@ -139,13 +138,15 @@ def add_detail_to_stocks(df: pd.DataFrame) -> List[str]:
             sectors = jq.get_industry(security=not_have_sector)
             df['sector'] = df.apply(lambda x: x.sector if not pd.isna(x.sector)
                                     else " ".join(value['industry_name']
-                                                  for value in sectors[x.ticker].values()), axis=1)
+                                                  for value in
+                                                  sectors[x.ticker].values()),
+                                    axis=1)
             df['aggregate_sector'] = df.apply(
                 lambda x: x.aggregate_sector if not pd.isna(x.aggregate_sector)
                 else aggregate_sector(x.sector), axis=1
             )
         except Exception as e:
-            error.append(f'Error on creaet_sector_information\n{ticker}\n{e}')
+            error.append(f'Error on creaet_sector_information\n{e}')
 
     # display_name and name
     if len(not_have_name) != 0:
@@ -162,7 +163,9 @@ def add_detail_to_stocks(df: pd.DataFrame) -> List[str]:
 
 
 @auth_api
-def update_portfolio_profile(stocks: List[dict], current_p: pd.DataFrame = None) -> tuple[pd.DataFrame, List[str]]:
+def update_portfolio_profile(stocks: List[dict],
+                             current_p: pd.DataFrame = None) \
+        -> tuple[pd.DataFrame, List[str]]:
     """create or update a portfolio profile,
     return a time series of profile
 
@@ -271,8 +274,10 @@ def fetch_stocks_price(**params):
     stocks_df.rename(columns={'code': 'ticker'}, inplace=True)
 
     if params.get('frequency') == 'daily' or params.get('frequency') == '1d':
-        # replace time to market close time
-        stocks_df['time'] = stocks_df['time'].apply(lambda x: x.replace(hour=15, minute=0, second=0))
+        if 'time' in stocks_df.columns:
+            # replace time to market close time
+            stocks_df['time'] = stocks_df['time'].apply(
+                lambda x: x.replace(hour=15, minute=0, second=0))
     return stocks_df
 # jq.get_price(security='600673.XSHG', end_date=datetime.now(), frequency='1m', count=1)
 
@@ -296,7 +301,7 @@ def fetch_benchmark_profile(start_date: datetime, end_date: datetime, delta_time
 
     results = []
     with tqdm(total=(end_date - start_date) / delta_time, colour='green', desc='Fetching benchmark') as pbar:
-        while start_date < end_date:
+        while start_date <= end_date:
             try:
                 date_str = start_date.strftime('%Y-%m-%d')
                 result = jq.get_index_weights(benchmark, date=date_str)
@@ -305,8 +310,8 @@ def fetch_benchmark_profile(start_date: datetime, end_date: datetime, delta_time
                 print(f'Error when fetching {benchmark}\n\
                                     update on {date_str} is missing\n\
                                     {e}')
+                raise (e)
             start_date += delta_time
-            print(1)
             pbar.update(1)
     update_df = pd.concat(results)
     update_df['ticker'] = update_df.index
@@ -320,7 +325,35 @@ def fetch_benchmark_profile(start_date: datetime, end_date: datetime, delta_time
     # replace time to same date 3pm
     update_df['date'] = update_df['date'].apply(
         lambda x: x.replace(hour=15, minute=0, second=0))
-    
+
     return update_df
 
+
+@auth_api
+def fetch_benchmark_price(start_date, end_date, frequency='1d'):
+    '''
+    fetch benchmark price from start_date to end_date with frequency 
+
+    Parameters
+    ----------
+    start_date : datetime
+        start date of the period include start date
+    end_date : datetime
+        end date of the period include end date
+    frequency : str, optional
+        the default is '1d' for daily price
+    '''
+    df = fetch_stocks_price(security='000905.XSHG',
+                            start_date=start_date,
+                            end_date=end_date,
+                            frequency=frequency)
+    df['time'] = df.index
+    df.reset_index(drop=True, inplace=True)
+    df['time'] = df['time'].apply(
+        lambda x: x.replace(hour=15, minute=0, second=0))
+    return df
+
 # print(fetch_stocks_price(security=['601077.XSHG','300009.XSHE'],end_date=datetime(2023, 9, 26 ,10, 17), frequency='1m',count=1))
+
+if __name__ == '__main__':
+    print(get_quota())

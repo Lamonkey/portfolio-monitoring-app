@@ -37,7 +37,12 @@ def initialize_db():
     if not _create_table_with_schema(ts.USER_TABLE, ts.USER_TABLE_SCHEMA):
         raise Exception(
             f'INITIALIZATION ERROR: cannot create table {ts.USER_TABLE} ')
+    
+    # initialize benchmakr price
+    if not _create_table_with_schema(ts.BENCHMARK_PRICE_TABLE, ts.BENCHMARK_PRICE_TABLE_SCHEMA):
+        raise Exception(
+            f'INITIALIZATION ERROR: cannot create table {ts.BENCHMARK_PRICE_TABLE} ')
 
 # allow to be run as script
 if __name__ == '__main__':
-    initialize_db()
+    _create_table_with_schema(ts.BENCHMARK_PRICE_TABLE, ts.BENCHMARK_PRICE_TABLE_SCHEMA)

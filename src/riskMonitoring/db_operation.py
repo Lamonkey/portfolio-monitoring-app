@@ -38,6 +38,13 @@ def _validate_schema(df, schema):
     #         return False
     return True
 
+def append_to_benchmark_price(df):
+    '''append new entry to benchmark price table'''
+    _append_df_to_db(df,
+                     ts.BENCHMARK_PRICE_TABLE,
+                     ts.BENCHMARK_PRICE_TABLE_SCHEMA)
+    
+
 
 def get_most_recent_profile(type):
     table_name = 'benchmark_profile' if type == 'benchmark' else 'portfolio_profile'
@@ -48,11 +55,25 @@ def get_most_recent_profile(type):
         df['date'] = pd.to_datetime(df['date'])
         return df
 
+def get_oldest_benchmark_price():
+    '''return the earliest entry in the benchmark price table'''
+    return _get_oldest(ts.BENCHMARK_PRICE_TABLE, ts_column='time')
+
+def get_most_recent_benchmark_price():
+    '''return the most recent entry in the benchmark price table'''
+    return _get_most_recent(ts.BENCHMARK_PRICE_TABLE, ts_column='time')
 
 def get_all_benchmark_profile():
     '''return all entries in the benchmark profile table'''
     return _get_all_row(ts.BENCHMARK_TABLE)
 
+def get_benchmark_price_between(start, end):
+    '''return benchmark price between start and end'''
+    query = f"SELECT * FROM {ts.BENCHMARK_PRICE_TABLE} WHERE Datetime(time) BETWEEN Datetime('{start}') AND Datetime('{end}')"
+    with create_engine(db_url).connect() as conn:
+        df = pd.read_sql(query, con=conn)
+        df.time = pd.to_datetime(df.time)
+    return df
 
 def append_to_benchmark_profile(df):
     '''append new entry to benchmark profile table'''
@@ -83,6 +104,9 @@ def _get_oldest(table_name, ts_column='date'):
 
 
 def get_oldest_stocks_price():
+    '''
+    get the oldest entry in the stocks price table
+    '''
     df = _get_oldest(ts.STOCKS_PRICE_TABLE, ts_column='time')
     return df
 
@@ -223,11 +247,13 @@ def get_all_stocks_price():
     return _get_all_row(ts.STOCKS_PRICE_TABLE, ts_column='time')
 
 
-def get_stocks_price(tickers: list[str]):
+def get_stocks_price(tickers: list[str], time=None):
     '''
     return df of stock price within ticker in stocks price table
     '''
-    if len(tickers) == 0:
+    if time is not None:
+        query = f"SELECT * FROM {ts.STOCKS_PRICE_TABLE} WHERE ticker IN {tuple(tickers)} AND Datetime(time) = Datetime('{time}')"
+    elif len(tickers) == 0:
         # select 0 zero but return df has the same schema
         query = f"SELECT * FROM {ts.STOCKS_PRICE_TABLE} WHERE 1=0"
     elif len(tickers) == 1:
@@ -256,11 +282,14 @@ def update_portfolio_profile_to_db(portfolio_df):
     if (_validate_schema(portfolio_df, ts.PORTFOLIO_TABLE_SCHEMA)):
         raise ValueError(
             'uploaded portfolio_df has different schema than PORTFOLIO_DB_SCHEMA')
+    # if no ticker is None
+    if portfolio_df.ticker.isnull().values.any():
+        raise ValueError('portfolio_df has empty ticker column')
     try:
         with create_engine(db_url).connect() as conn:
             portfolio_df[ts.PORTFOLIO_TABLE_SCHEMA.keys()].to_sql(
                 ts.PORTFOLIO_TABLE, con=conn, if_exists='replace', index=False)
-
+    
     except Exception as e:
         print(e)
         raise e
@@ -326,3 +355,5 @@ def get_all_user_info():
     except Exception as e:
         print(e)
         raise Exception('Error getting user table')
+
+    

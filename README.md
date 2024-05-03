@@ -70,5 +70,5 @@ Then run the app
 
 ```
 cd src
-panel indexPage.py editingPage.py --setup backgroundTask.py
+panel serve pages/* --basic-auth ./credential.json --cookie-secret=${SECRET_COOKIE} --setup backgroundTask.py --address 0.0.0.0 --port 7860 --allow-websocket-origin "*"
 ```

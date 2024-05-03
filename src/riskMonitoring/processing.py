@@ -114,15 +114,13 @@ def get_portfolio_evaluation(portfolio_stock, benchmark_stock, profile_df):
     agg_b_stock = benchmark_stock\
         .groupby('date', as_index=False)\
         .agg({'portfolio_return': 'sum', 'portfolio_pct': 'sum'})
-
-    # add pct of benchmark
     merged_df = pd.merge(agg_p_stock, agg_b_stock, on=[
                          'date'], how='left', suffixes=('_p', '_b'))
 
     # portfolio mkt cap
-    mkt_adjustment = pd.DataFrame(profile_df.groupby('date')['weight'].sum())
-    mkt_adjustment.rename(columns={'weight': 'mkt_cap'}, inplace=True)
-    merged_df = merged_df.merge(mkt_adjustment, on=['date'], how='outer')
+    # mkt_adjustment = pd.DataFrame(profile_df.groupby('date')['weight'].sum())
+    # mkt_adjustment.rename(columns={'weight': 'mkt_cap'}, inplace=True)
+    # merged_df = merged_df.merge(mkt_adjustment, on=['date'], how='outer')
 
     for i in range(len(merged_df)):
         if pd.isna(merged_df.loc[i, 'mkt_cap']) and i > 0:
@@ -643,6 +641,8 @@ def calculate_periodic_BHB(agg_b, agg_p):
 
 
 def select_first_last_stock_within_window(df, start, end):
+    start = datetime.combine(start, datetime.min.time())
+    end = datetime.combine(end, datetime.max.time())
     croped_df = df[df.time.between(start, end, inclusive='both')]
     grouped = croped_df.groupby('ticker')
     first_df = croped_df.loc[grouped.time.idxmin()]
@@ -871,13 +871,21 @@ def get_draw_down(analytic_p, analytic_b):
     return merged_df
 
 
-def get_portfolio_anlaysis(analytic_p, analytic_b):
+def get_portfolio_anlaysis(analytic_p, analytic_b, benchmark_df):
     '''
     return df contain daily pnl, daily return, accumulative return
     risk and tracking error of portfolio and benchmark
 
     used by the portfolio summary component
     '''
+    selected_b_df = benchmark_df[benchmark_df.time.between(
+        analytic_p.time.min(), analytic_p.time.max())].copy()
+    
+    # calculate return of benchmark
+    selected_b_df['pct'] = selected_b_df['close'].pct_change()
+    if not selected_b_df.empty:
+        selected_b_df['return'] = selected_b_df['close'] / selected_b_df.iloc[0]['close'] - 1
+        selected_b_df['return'] = pd.Series(dtype=float)
 
     # aggregate by exact time
     analytic_p = analytic_p.groupby('time')\
@@ -886,55 +894,55 @@ def get_portfolio_anlaysis(analytic_p, analytic_b):
     analytic_b = analytic_b.groupby('time')\
         .agg({'return': 'sum'})\
         .reset_index()
-    
-    # first ts entry should have 0 as return and pnl
-    analytic_p = analytic_p.sort_values(by=['time'])
-    analytic_b = analytic_b.sort_values(by=['time'])
-    # analytic_p.iloc[0, analytic_p.columns.get_loc('return')] = 0
-    # analytic_b.iloc[0, analytic_b.columns.get_loc('return')] = 0
-    # analytic_p.iloc[0, analytic_p.columns.get_loc('pnl')] = 0
-
-    # total capital
-    analytic_p['total_cap'] = analytic_p['cash'] + analytic_p['rest_cap']
-
-    # calculate accumulative pnl using total capital
-    analytic_p['pnl'] = analytic_p.total_cap.diff().fillna(0)
-    # using accumulative pnl to calculate return
-    analytic_p['cum_pnl'] = analytic_p['pnl'].cumsum()
-    # cumulative return using pnl
-    analytic_p['cum_return'] = analytic_p['cum_pnl'] / analytic_p.loc[0, 'total_cap']
-    # use cum_return caculate return
-    analytic_p['return'] = (analytic_p['cum_return'] + 1).pct_change()
-    # accumulative return vgb
-    analytic_b['cum_return'] = (analytic_b['return'] + 1).cumprod() - 1
-    
-    # first ts entry should have 0 as return and pnl
-    analytic_p.iloc[0, analytic_p.columns.get_loc('return')] = 0
-    analytic_b.iloc[0, analytic_b.columns.get_loc('return')] = 0
-
-
+   
     # merge
-    merged_df = pd.merge(
-        analytic_p, analytic_b, on=['time'], how='outer', suffixes=('_p', '_b'))
+    # merged_df = pd.merge(
+    #     analytic_p, analytic_b, on=['time'], how='outer', suffixes=('_p', '_b'))
+    
+    merged_df = analytic_p.merge(
+        selected_b_df, on=['time'],
+        how='outer', suffixes=('_p', '_b'))
+
     merged_df.sort_values('time', inplace=True)
 
-    # forward fill the benmark return and cum return
-    merged_df['return_b'].fillna(method='ffill', inplace=True)
-    merged_df['cum_return_b'].fillna(method='ffill', inplace=True)
+    # portfolio pnl
+    merged_df['total_cap'] = merged_df['cash'] + merged_df['rest_cap']
+    merged_df['pnl'] = merged_df.total_cap.diff().fillna(0)
 
-    # first ts entry should have 0 as return and pnl
-    merged_df.iloc[0, merged_df.columns.get_loc('return_b')] = 0
-    merged_df.iloc[0, merged_df.columns.get_loc('cum_return_b')] = 0
+    # portfolio return
+    # merged_df.iloc[0, merged_df.columns.get_loc('return_p')] = 0
+    merged_df['cum_pnl'] = merged_df['pnl'].cumsum()
+    if merged_df.empty:
+        merged_df['cum_return_p'] = pd.Series(dtype=float)
+    else:
+        merged_df['cum_return_p'] = merged_df['cum_pnl'] / merged_df.loc[0, 'total_cap']
+    merged_df['return_p'] = (merged_df['cum_return_p'] + 1).pct_change()
+    merged_df['return_p'].fillna(0, inplace=True)
 
-    # risk, using population deviation and normalized by sqrt(252)
+    # benchmark return
+    # merged_df.rename(columns={'return': 'return_b'}, inplace=True)
+    # merged_df.iloc[0, merged_df.columns.get_loc('return_b')] = 0
+    # merged_df['return_b'].fillna(0, inplace=True)
+    # merged_df['cum_return_b'] = (merged_df['return_b'] + 1).cumprod() - 1
+
+    merged_df['pct'].fillna(0, inplace=True)
+    merged_df['close'].fillna(method='bfill', inplace=True)
+    merged_df['return_b'] = merged_df['close'].pct_change()
+    if not merged_df.empty:
+        merged_df['cum_return_b'] = merged_df['close'] / merged_df.loc[0, 'close'] - 1
+    else:
+        merged_df['cum_return_b'] = pd.Series(dtype=float)
+
+
+    # risk
+
     merged_df['risk'] = merged_df['return_p'].expanding(
         min_periods=1).std() * math.sqrt(252)
-
     # active return
     merged_df['active_return'] = merged_df['return_p'] - merged_df['return_b']
-
     # tracking error
     merged_df['tracking_error'] = merged_df['active_return']\
         .expanding(min_periods=1).std() * math.sqrt(252)
+
 
     return merged_df

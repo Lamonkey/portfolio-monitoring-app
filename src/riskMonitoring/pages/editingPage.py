@@ -3,7 +3,7 @@
 import panel as pn
 from riskMonitoring.utils import create_stocks_entry_from_excel, style_number, create_share_changes_report, time_in_beijing
 from bokeh.models.widgets.tables import NumberEditor, SelectEditor
-from tranquilizer import tranquilize
+
 import pandas as pd
 import riskMonitoring.api as api
 import riskMonitoring.db_operation as db
@@ -23,7 +23,6 @@ pn.extension(notifications=True)
 MIN_COMPONENT_WIDTH = 375
 MAX_COMPONENT_WIDTH = 600
 
-@tranquilize(method="POST")
 def upload_to_db(data):
     # check if valid json
     try:
@@ -105,7 +104,6 @@ def create_portfolio_stream_entry(stocks, portfolio_df):
     stream_entry['sync_to_db'] = True
 
     # fill empty ave_price with latest closing price
-    # TODO: for now all ave_price is fetching from api
     ticker = stream_entry.ticker.tolist()
 
     # when not holding any stocks
@@ -171,7 +169,7 @@ def app():
     # get all stocks ticker for auto fill
     stock_details = db.get_all_stocks_infos()
     all_tickers = stock_details.ticker.to_list()
-
+    
     # get most recent portfolio for auto generate entry
     most_recent_portfolio = None
     if len(p_profile) == 0:
@@ -370,7 +368,6 @@ def app():
     @notify
     def update_profile_tabulator(e):
         '''add all stocks entry to ui'''
-        # TODO: make this idempotent
         new_entries = [dict(ticker=row[1].value,
                             shares=row[2].value,
                             rest_cap=total_cap_input.value,
@@ -466,7 +463,10 @@ def app():
             yield {'type': 'info', 'description': "正在更新股票数据", 'duration': 0}
             pipeline.left_fill_stocks_price()
             pipeline.right_fill_stock_price()
-
+            # fill missing benchmark price
+            yield {'type': 'info', 'description': "正在更行index价格", 'duration': 0}
+            pipeline.left_fill_benchmark_price()
+            pipeline.right_fill_benchmark_price()
             # recalculate
             yield {'type': 'info', 'description': "正在重新计算权重", 'duration': 0}
             pipeline.batch_processing()

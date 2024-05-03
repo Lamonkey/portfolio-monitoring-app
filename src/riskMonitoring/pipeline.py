@@ -279,8 +279,39 @@ def batch_processing():
 
 
 def left_fill():
+    # update benchmark profile then stocks price then benchmark price
     left_fill_benchmark_profile()
     left_fill_stocks_price()
+    left_fill_benchmark_price()
+
+
+def left_fill_benchmark_price():
+    '''
+    left fill bechmark price to match the earliest date in stock price table
+    '''
+    start = db.get_oldest_portfolio_profile().date[0]
+    end = db.get_oldest_benchmark_profile().date[0]
+
+    if end is None or end is pd.NaT:
+        end = utils.time_in_beijing()
+
+    if start >= end:
+        # no update needed
+        return 
+
+    # minus 1 becuase it is inclusive on both end
+    df = api.fetch_benchmark_price(start, end - dt.timedelta(days=1))
+    db.append_to_benchmark_price(df)
+
+
+def right_fill_benchmark_price():
+    start = db.get_oldest_benchmark_profile().date[0]
+    end = utils.time_in_beijing()
+    if start == end:
+        # no update needed
+        return
+    df = api.fetch_benchmark_price(start + pd.Timedelta(days=1), end)
+    db.append_to_benchmark_price(df)
 
 
 def handle_portfolio_update():
@@ -290,10 +321,8 @@ def handle_portfolio_update():
 
     update method is idempotent, so it is safe to call multiple times
     '''
-    left_fill_benchmark_profile()
-    print("left fill benchmark profile")
-    left_fill_stocks_price()
-    print('left fill stock price db')
+    print("left filling profile, stock price and benchmark price")
+    left_fill()
     batch_processing()
     print('done processing')
 
@@ -317,14 +346,16 @@ async def daily_update():
     left_fill_stocks_price()
     right_fill_stock_price()
     print("updated stocks price")
+    # update benchmark price
+    left_fill_benchmark_price()
+    right_fill_benchmark_price()
+    print("updated benchmark price")
     # update all stock detail
     update_stocks_details_to_db()
     print("updated stocks details")
     log.update_log('daily_update')
     batch_processing()
-
     # watch event and trigger
-
     print("updated analytic")
 
 
