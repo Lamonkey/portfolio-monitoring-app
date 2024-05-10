@@ -20,11 +20,12 @@ class Component(Viewer):
         self.styles = styles
         self.max_width = max_width
         self.min_width = min_width
+        start = calculated_p_stock.time.min().date()
+        end = calculated_p_stock.time.max().date()
         self.date_range = pn.widgets.DateRangeSlider(
-            start=calculated_p_stock.time.min(),
-            end=calculated_p_stock.time.max(),
-            value=(calculated_p_stock.time.min(),
-                   calculated_p_stock.time.max())
+            start=start,
+            end=end,
+            value=(start, end)
         )
 
         self.calculated_p_stock = calculated_p_stock
@@ -50,11 +51,13 @@ class Component(Viewer):
         on: str
             column name to calculate max draw down
         '''
-        cliped_df_p = self.calculated_p_stock[self.calculated_p_stock.time.between(
-            self.start_date, self.end_date, inclusive='both')]
+        cliped_df_p = utils.clip_df(df=self.calculated_p_stock,
+                                    start=self.start_date,
+                                    end=self.end_date)
 
-        cliped_df_b = self.analytic_b[self.analytic_b.time.between(
-            self.start_date, self.end_date, inclusive='both')]
+        cliped_df_b = utils.clip_df(
+            df=self.analytic_b, start=self.start_date, end=self.end_date
+        )
 
         df = processing.get_draw_down(
             analytic_p=cliped_df_p, analytic_b=cliped_df_b)

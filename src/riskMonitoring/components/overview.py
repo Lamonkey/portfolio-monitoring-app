@@ -292,11 +292,12 @@ class Component(Viewer):
             start=0,
             end=1e6
         )
+        start = self.p_stock_df.time.min().date()
+        end = self.p_stock_df.time.max().date()
         self.date_range_slider = pn.widgets.DateRangeSlider(
-            start=p_stock_df.time.min(),
-            end=b_stock_df.time.max(),
-            value=(p_stock_df.time.max() -
-                   timedelta(days=7), p_stock_df.time.max())
+            start=start,
+            end=end,
+            value=(end - timedelta(days=7), end)
         )
         self.cum_pnl_plot = pn.pane.Plotly()
         self.return_plot = pn.pane.Plotly()

@@ -25,12 +25,13 @@ class Component(Viewer):
         self.calculated_p_stock = calculated_p_stock
         self.calculated_b_stock = calculated_b_stock
 
+        start = self.calculated_p_stock.time.min().date()
+        end = self.calculated_p_stock.time.max().date()
+
         self.range_slider = pn.widgets.DateRangeSlider(
             name='Date Range Slider',
-            start=self.calculated_p_stock.time.min(), end=self.calculated_p_stock.time.max(),
-            value=(self.calculated_p_stock.time.min(),
-                   self.calculated_p_stock.time.max()),
-
+            start=start, end=end,
+            value=(start, end),
         )
         self.options_selector = pn.widgets.Select(
             name='选择周期',
