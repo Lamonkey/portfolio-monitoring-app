@@ -76,16 +76,29 @@ class Component(Viewer):
         self.trend_plot.object = self.create_trend_plot(df)
 
     def create_trend_plot(self, df):
-        fig = px.bar(df, x='time', y=['cash', 'rest_cap'])
+        df['date'] = df['time'].dt.date
+        df = df.drop_duplicates(subset=['date'], keep='last')
+        df = df.rename(columns={'cash': 'investment', 'rest_cap': 'cash'})
+        fig = px.bar(df,
+                     x='date',
+                     y=['investment', 'cash'],
+                     barmode='group',
+                     )
+
         fig.update_layout(**styling.plot_layout)
+
         fig.update_traces(
             marker_line_width=0,
             selector=dict(type="bar"))
+
         fig.update_layout(bargap=0,
                           bargroupgap=0,
                           )
-        fig.update_layout(uniformtext_minsize=8, uniformtext_mode='hide',
-                          yaxis_title=None, xaxis_title=None,
+
+        fig.update_layout(uniformtext_minsize=8,
+                          uniformtext_mode='hide',
+                          yaxis_title=None,
+                          xaxis_title=None,
                           margin=dict(l=0, r=0, t=0, b=0))
         return fig.to_dict()
 
@@ -134,7 +147,8 @@ class Component(Viewer):
         cap_on_date = self.daily_cap_df[self.daily_cap_df.time == date_time]
         # cap of each ticker
         selected_df = self.p_stock_df[self.p_stock_df.time == date_time].copy()
-        selected_df['time_str'] = selected_df['time'].dt.strftime('%Y-%m-%d %H:%M:%S')
+        selected_df['time_str'] = selected_df['time'].dt.strftime(
+            '%Y-%m-%d %H:%M:%S')
         tree_plot = self.create_treemap(cap_on_date, selected_df)
         self.tree_plot.object = tree_plot
 
