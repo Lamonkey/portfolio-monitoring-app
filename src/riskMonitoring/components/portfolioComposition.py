@@ -134,9 +134,9 @@ class Component(Viewer):
         cap_on_date = self.daily_cap_df[self.daily_cap_df.time == date_time]
         # cap of each ticker
         selected_df = self.p_stock_df[self.p_stock_df.time == date_time].copy()
+        selected_df['time_str'] = selected_df['time'].dt.strftime('%Y-%m-%d %H:%M:%S')
         tree_plot = self.create_treemap(cap_on_date, selected_df)
         self.tree_plot.object = tree_plot
-
 
         # update tabulator
         '''
@@ -156,5 +156,4 @@ class Component(Viewer):
             'rest_cap',
             'return',
             'cum_return',
-            'time']]
-
+            'time_str']]
