@@ -18,6 +18,8 @@ class Component(Viewer):
     def __init__(self, styles, analytic_df, max_width, min_width, **params):
         self.p_stock_df = analytic_df
         self.styles = styles
+        start_date = self.p_stock_df.time.min().date()
+        end_date = self.p_stock_df.time.max().date()
 
         # calculate daily capital
         processing.calculate_cum_return(self.p_stock_df)
@@ -26,16 +28,15 @@ class Component(Viewer):
 
         self.date_slider = \
             pn.widgets.DateSlider(name='选择某日资金分布',
-                                  start=self.p_stock_df.time.min(),
-                                  end=self.p_stock_df.time.max(),
-                                  value=self.p_stock_df.time.max(),
+                                  start=start_date,
+                                  end=end_date,
+                                  value=end_date,
                                   )
         self.date_range = \
             pn.widgets.DateRangeSlider(name='选择资金分布走势区间',
-                                       start=self.p_stock_df.time.min(),
-                                       end=self.p_stock_df.time.max(),
-                                       value=(self.p_stock_df.time.min(
-                                       ), self.p_stock_df.time.max()),
+                                       start=start_date,
+                                       end=end_date,
+                                       value=(start_date, end_date),
                                        )
         self.tree_plot = pn.pane.Plotly()
         self.trend_plot = pn.pane.Plotly()
