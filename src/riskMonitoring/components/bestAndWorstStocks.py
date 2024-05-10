@@ -32,11 +32,12 @@ class Component(Viewer):
         'return',
         'period',
     ]
-    forzen_columns = ['time', 'display_name', 'cum_pnl', 'shares', 'period']
+    forzen_columns = ['hold', 'display_name', 'cum_pnl', 'shares']
     tooltip = "在一个时间窗口中累计盈利最高和最低的股票，包括已经卖出的股票，如果表格的日期小于窗口的结束时间代表已经卖出"
 
     def create_tabulator(self):
         col_title_map = {
+            'hold': '持有',
             'display_name': '股票名称',
             'ticker': '股票代码',
             'time': '日期',
@@ -49,21 +50,15 @@ class Component(Viewer):
             'close': '收盘价',
             'aggregate_sector': "行业板块",
         }
-        return pn.widgets.Tabulator(sizing_mode='stretch_width',
-                                    layout='fit_data_stretch',
-                                    hidden_columns=self.hidden_col,
-                                    frozen_columns=self.forzen_columns,
-                                    titles=col_title_map
-                                    )
 
-    # def _get_cum_return(self, df):
-    #     '''return a df contain cumulative return at the end date'''
-    #     result_df = processing.calculate_cum_return_rate(df=df,
-    #                                             start=self.start_date,
-    #                                             end=self.end_date)
-    #     grouped = result_df.groupby('ticker')
-    #     last_row = result_df.loc[grouped.time.idxmax()]
-    #     return last_row
+        tb = pn.widgets.Tabulator(sizing_mode='stretch_width',
+                                  layout='fit_data_stretch',
+                                  hidden_columns=self.hidden_col,
+                                  frozen_columns=self.forzen_columns,
+                                  titles=col_title_map,
+                                  )
+
+        return tb
 
     def get_processed_df(self):
         '''
@@ -84,6 +79,8 @@ class Component(Viewer):
     @param.depends('start_date', 'end_date', watch=True)
     def update(self):
         result_df = self.get_processed_df()
+        result_df['hold'] = result_df['time']\
+            .map(lambda x: '❌' if x.date() < self.end_date else '✅')
         self.best_5_tabulator.value = result_df.head(5)
         self.worst_5_tabulator.value = result_df.tail(5)
 
@@ -91,15 +88,15 @@ class Component(Viewer):
         self.styles = styles
         self.title = title
         self.analytic_df = analytic_df
+        end_date = self.analytic_df.time.max().date()
         self._date_range = pn.widgets.DateRangeSlider(
             name='选择计算回报的时间区间',
-            start=self.analytic_df.time.min(),
-            end=self.analytic_df.time.max(),
-            value=(self.analytic_df.time.max() -
-                   timedelta(days=7), self.analytic_df.time.max())
+            start=self.analytic_df.time.min().date(),
+            end=end_date,
+            value=(end_date - timedelta(days=7), end_date)
         )
-        self.start_date = self._date_range.value_start
-        self.end_date = self._date_range.value_end
+        self.start_date = self._date_range.value[0]
+        self.end_date = self._date_range.value[1]
 
         self.best_5_tabulator = self.create_tabulator()
         self.worst_5_tabulator = self.create_tabulator()
