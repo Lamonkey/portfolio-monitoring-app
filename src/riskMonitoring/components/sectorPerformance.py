@@ -40,19 +40,21 @@ class Component(Viewer):
         self.end_date = self.date_range.value[1]
 
     def get_oppo_cost_report(self, merged_df):
-        merged_df['oppo_cost'] = merged_df.pnl * (1-merged_df['weight_b'] /
-                                                  merged_df['weight_p'])
-        oppo_cost = merged_df.groupby('aggregate_sector')['oppo_cost'].sum()
-
-        html = f'<div style="display:flex; justify-content: space-between;">\
-            <h1>allocation机遇成本: </h1> <h1>{round(oppo_cost.sum(),2)}</h1></div>'
-        html += '<p> (1-w_b/w_p)*pnl </p>'
+        oppo_save_pnl = merged_df['pnl']\
+            .mul(merged_df['weight_p'].sub(merged_df['weight_b']))\
+            .sum()
+        merged_df['oppo_save_return'] = merged_df['return_p'] * \
+            merged_df['active_weight']
+        oppo_save_return = merged_df.groupby('aggregate_sector')[
+            'oppo_save_return'].sum()
+        html = f'<div style="display:flex; justify-content: space-between; align-items: center">\
+            <h1>allocation\'s <br/>oppo saving: </h1> <h1 style>{round(oppo_save_pnl.sum(),2)}<br/> {round(oppo_save_return.sum() * 100, 2)}%</h1></div>'
         html += '<table style="width:100%; text-align:center">'
         html += '<tr><th>Sector</th><th>Value</th></tr>'
 
-        for key, value in oppo_cost.items():
+        for key, value in oppo_save_return.items():
             color = 'red' if value < 0 else 'green'
-            html += f'<tr style="color: {color};"><td>{key}</td><td>{round(value,2)}</td></tr>'
+            html += f'<tr style="color: {color};"><td>{key}</td><td>{round(value * 100,2)}%</td></tr>'
 
         html += '</table>'
         return html
