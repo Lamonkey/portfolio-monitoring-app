@@ -287,9 +287,9 @@ def calculate_total_attribution(calculated_p_stock, calculated_b_stock):
 #     Parameters
 #     ----------
 #     df : dataframe
-#         sorted dafaframe 
+#         sorted dafaframe
 #     '''
-   
+
 #     # cum return
 #     df['cum_return'] = df.groupby('ticker')['pct'].apply(
 #         lambda x: (1 + x).cumprod() - 1).reset_index(level=0, drop=True)
@@ -332,7 +332,7 @@ def _uniformize_time_series(profile_df):
         # row that has ticker not in tickers_next
         missing_tickers = current_df[~tickers_current.isin(
             tickers_next)]
-        
+
         # not include ticker is ""
         missing_tickers = missing_tickers[missing_tickers.ticker != ""].copy()
         # missing_tickers = missing_tickers[~missing_tickers.ticker.isna()]
@@ -469,6 +469,7 @@ def calculate_attributes_between_dates(start, end, calculated_p_stock, calculate
         df.pct_p - df.prev_w_in_p_b * df.pct_b
 
     return df
+
 
 def calculate_cum_pnl(df: pd.DataFrame):
     '''return df with cumulative pnl within a window
@@ -757,7 +758,8 @@ def agg_to_daily_sector(df: pd.DataFrame):
     '''
     aggregate a analytic df to daily sector view
     '''
-    on_column = {'return': 'sum', 'aggregate_sector': 'first', 'weight': 'sum',}
+    on_column = {'return': 'sum',
+                 'aggregate_sector': 'first', 'weight': 'sum', }
     if 'cash' in df.columns:
         on_column['cash'] = 'sum'
     if 'pnl' in df.columns:
@@ -766,7 +768,8 @@ def agg_to_daily_sector(df: pd.DataFrame):
     agg_df = agg_df.reset_index(level=1, drop=True).reset_index()
     agg_df['period'] = agg_df.time.dt.to_period('D')
     # keep the largest time for each day
-    agg_df = agg_df[agg_df.groupby('period')['time'].transform(max) == agg_df['time']]
+    agg_df = agg_df[agg_df.groupby(
+        'period')['time'].transform(max) == agg_df['time']]
     return agg_df
 
 
@@ -787,7 +790,8 @@ def agg_to_daily(df: pd.DataFrame):
     agg_df = df.groupby('time').agg(on_column).reset_index()
 
     # keep only row have max time in each day
-    agg_df = agg_df[agg_df.groupby('period')['time'].transform(max) == agg_df['time']]
+    agg_df = agg_df[agg_df.groupby(
+        'period')['time'].transform(max) == agg_df['time']]
     return agg_df.reset_index()
 
 
@@ -805,15 +809,18 @@ def calculate_cum_return(df):
 def calculate_max_draw_down(df, on):
     """
     find the max draw down on column
+
+    dd: (peak - though) / peak
+    mdd: cumulative max dd
     """
     tmp_df = df[['period', on]].copy()
 
     # Calculate the drawdown for each day
     tmp_df['cum_max'] = tmp_df[on].cummax()
-    tmp_df['drawdown'] = (tmp_df[on] / tmp_df['cum_max']) - 1
+    tmp_df['drawdown'] = (tmp_df['cum_max'] - tmp_df[on]) / tmp_df['cum_max']
 
     # Find the maximum drawdown and the corresponding date for each day
-    max_drawdown = tmp_df['drawdown'].cummin()
+    max_drawdown = tmp_df['drawdown'].cummax()
     df[f'{on}_max_drawdown'] = max_drawdown
     df[f'{on}_drawdown'] = tmp_df['drawdown']
 
@@ -838,32 +845,16 @@ def get_draw_down(analytic_p, analytic_b):
     # calculate portfolio total cap
     agg_p['total_cap'] = agg_p['cash'] + agg_p['rest_cap']
 
-    # calculate daily return 
-    agg_p['return'] = agg_p['total_cap'].pct_change()
-
     # calculate accumulative return
     agg_p['cum_pnl'] = agg_p['total_cap'].diff()
 
-    # accumulative pnl
-    agg_p['cum_return'] = agg_p['cum_pnl'] \
-        / (agg_p.loc[0, 'cash'] + agg_p.loc[0, 'rest_cap'])
-    
-    # calculate benchmark return
-    agg_b['cum_return'] = (agg_b['return'] + 1).cumprod() - 1
-
-    # merge 
+    # merge
     merged_df = pd.merge(
         agg_p, agg_b, on=['period'], how='outer', suffixes=('_p', '_b'))
     merged_df.sort_values('period', inplace=True)
 
-    # active return
-    merged_df['active_return'] = merged_df['return_p'] - merged_df['return_b']
-
     # pnl max draw down
     calculate_max_draw_down(merged_df, 'cum_pnl')
-
-    # active return max draw down
-    calculate_max_draw_down(merged_df, 'active_return')
 
     # total capital max draw down
     calculate_max_draw_down(merged_df, 'total_cap')
@@ -880,11 +871,12 @@ def get_portfolio_anlaysis(analytic_p, analytic_b, benchmark_df):
     '''
     selected_b_df = benchmark_df[benchmark_df.time.between(
         analytic_p.time.min(), analytic_p.time.max())].copy()
-    
+
     # calculate return of benchmark
     selected_b_df['pct'] = selected_b_df['close'].pct_change()
     if not selected_b_df.empty:
-        selected_b_df['return'] = selected_b_df['close'] / selected_b_df.iloc[0]['close'] - 1
+        selected_b_df['return'] = selected_b_df['close'] / \
+            selected_b_df.iloc[0]['close'] - 1
         selected_b_df['return'] = pd.Series(dtype=float)
 
     # aggregate by exact time
@@ -894,11 +886,11 @@ def get_portfolio_anlaysis(analytic_p, analytic_b, benchmark_df):
     analytic_b = analytic_b.groupby('time')\
         .agg({'return': 'sum'})\
         .reset_index()
-   
+
     # merge
     # merged_df = pd.merge(
     #     analytic_p, analytic_b, on=['time'], how='outer', suffixes=('_p', '_b'))
-    
+    # TODO: remove duplication, only keep one record for each day
     merged_df = analytic_p.merge(
         selected_b_df, on=['time'],
         how='outer', suffixes=('_p', '_b'))
@@ -915,7 +907,8 @@ def get_portfolio_anlaysis(analytic_p, analytic_b, benchmark_df):
     if merged_df.empty:
         merged_df['cum_return_p'] = pd.Series(dtype=float)
     else:
-        merged_df['cum_return_p'] = merged_df['cum_pnl'] / merged_df.loc[0, 'total_cap']
+        merged_df['cum_return_p'] = merged_df['cum_pnl'] / \
+            merged_df.loc[0, 'total_cap']
     merged_df['return_p'] = (merged_df['cum_return_p'] + 1).pct_change()
     merged_df['return_p'].fillna(0, inplace=True)
 
@@ -929,10 +922,10 @@ def get_portfolio_anlaysis(analytic_p, analytic_b, benchmark_df):
     merged_df['close'].fillna(method='bfill', inplace=True)
     merged_df['return_b'] = merged_df['close'].pct_change()
     if not merged_df.empty:
-        merged_df['cum_return_b'] = merged_df['close'] / merged_df.loc[0, 'close'] - 1
+        merged_df['cum_return_b'] = merged_df['close'] / \
+            merged_df.loc[0, 'close'] - 1
     else:
         merged_df['cum_return_b'] = pd.Series(dtype=float)
-
 
     # risk
 
@@ -943,6 +936,5 @@ def get_portfolio_anlaysis(analytic_p, analytic_b, benchmark_df):
     # tracking error
     merged_df['tracking_error'] = merged_df['active_return']\
         .expanding(min_periods=1).std() * math.sqrt(252)
-
 
     return merged_df
