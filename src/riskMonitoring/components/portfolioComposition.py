@@ -40,8 +40,11 @@ class Component(Viewer):
                                        )
         self.tree_plot = pn.pane.Plotly()
         self.trend_plot = pn.pane.Plotly()
+        # map cash to investment and rest_cap to cash
         self.stock_tabulator = pn.widgets.Tabulator(
-            layout="fit_data_stretch", sizing_mode='stretch_both')
+            titles={'cash': 'investment', 'rest_cap': 'cash'},
+            layout="fit_data_stretch",
+            sizing_mode='stretch_both')
 
         self.file_name, self.download_button = self.stock_tabulator\
             .download_menu(
