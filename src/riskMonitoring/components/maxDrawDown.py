@@ -34,8 +34,6 @@ class Component(Viewer):
         self.captial_mdd_plot = pn.pane.Plotly(
             self.plot_drawdown('total_cap'))
         self.pnl_mdd_plot = pn.pane.Plotly(self.plot_drawdown('cum_pnl'))
-        self.active_return_mdd_plot = pn.pane.Plotly(
-            self.plot_drawdown('active_return'))
         super().__init__(**params)
 
     @param.depends('date_range.value', watch=True)
@@ -63,24 +61,21 @@ class Component(Viewer):
             analytic_p=cliped_df_p, analytic_b=cliped_df_b)
 
         # process cum_pnl and cum_return to percentage with 2 decimal
-        df['cum_pnl'] = df['cum_pnl'].apply(
-            lambda x: round(x, 2))
-        df['total_cap'] = df['total_cap'].apply(
-            lambda x: round(x, 2))
-        df['active_return'] = df['active_return'].apply(
-            lambda x: round(x * 100, 2))
+        # df['cum_pnl'] = df['cum_pnl'].apply(
+        #     lambda x: round(x, 2))
+        # df['total_cap'] = df['total_cap'].apply(
+        #     lambda x: round(x, 2))
+        # df['active_return'] = df['active_return'].apply(
+        #     lambda x: round(x * 100, 2))
 
         df.period = df.period.dt.strftime('%Y-%m-%d')
-        ending_unit = "¥" if on == 'cum_pnl' else "%"
         fig = px.line(df, x='period', y=[
                       f'{on}_max_drawdown', f'{on}_drawdown'], custom_data=[on, 'period'])
-
         fig.update_traces(styling.line_plot_trace)
-        hover_title = "累计回报率最大回撤" if on == 'cum_return' else "累计pnl最大回撤"
-        hover_title = "主动回报最大回撤" if on == 'active_return' else hover_title
+        hover_title = "总资产回撤" if on == 'total_cap' else "累计盈利回撤"
         fig.update_traces(
             hovertemplate="<br>".join([
-                hover_title + ": %{customdata[0]}" + ending_unit,
+                hover_title + ": %{customdata[0]}" + "¥",
                 "日期: %{customdata[1]}",
             ])
         )
@@ -99,17 +94,14 @@ class Component(Viewer):
     def update(self):
         self.captial_mdd_plot.object = self.plot_drawdown('total_cap')
         self.pnl_mdd_plot.object = self.plot_drawdown('cum_pnl')
-        self.active_return_mdd_plot.object = self.plot_drawdown(
-            'active_return')
 
     def __panel__(self):
         self._layout = pn.Column(
             pn.pane.HTML('<h1>最大回撤</h1>', sizing_mode='stretch_width'),
             self.date_range,
             pn.Tabs(
-                ('累计回报率', self.captial_mdd_plot),
-                ('累计pnl', self.pnl_mdd_plot),
-                ("active return", self.active_return_mdd_plot),
+                ('总资产', self.captial_mdd_plot),
+                ('累计盈利', self.pnl_mdd_plot),
                 dynamic=True,
             ),
             sizing_mode='stretch_both',
